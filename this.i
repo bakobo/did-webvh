@@ -98,13 +98,53 @@ A KERI AID reaches the mainstream DID ecosystem, on a binding Bakobo verified = 
         authority rather than establish it. What transfers is that nothing the submitter asserts
         is hosted on its own authority. did.jsonl is published byte-for-byte, and only after the
         whole log verifies from genesis on every publication rather than incrementally from a
-        trusted tail; did.json is always the resolved state computed from that verified log,
-        never a did.json the submitter supplied. Rejected accepting a submitted did.json as a
-        convenience, and rejected incremental verification from the previously published tail,
-        which would make Bakobo's own prior output an input to its trust decision. Accepted
-        tradeoff: the submitter's exact bytes are what Bakobo serves, so content the proof
-        happens to cover is served whatever it says — bounded by @tvv6dvyn and by shape
-        validation, not by re-derivation.
+        trusted tail. No document the submitter supplies is ever hosted; whatever appears beside
+        the log is computed from it (see @whgskdbb for which document that is). Rejected
+        accepting a submitted did.json as a convenience, and rejected incremental verification
+        from the previously published tail, which would make Bakobo's own prior output an input
+        to its trust decision. Accepted tradeoff: the submitter's exact bytes are what Bakobo
+        serves, so content the proof happens to cover is served whatever it says — bounded by
+        @tvv6dvyn and by shape validation, not by re-derivation.
+      children:
+
+        did.json is the parallel did:web document, and only when the log asks for it = decision:
+          id: whgskdbb
+          why: >
+            This node corrects @gzvt7mpn, which said did.json "is always the resolved state
+            computed from that verified log". That was wrong, and it was wrong in the same way
+            the reference implementation is wrong: didwebvh-py's provision writes the resolved
+            did:webvh document to did.json, but did.json sits at the did:web location, so a
+            did:web resolver fetching it receives a document whose `id` is a did:webvh DID —
+            which DID Core requires it to reject. Serving that file is serving junk under a
+            customer's domain.
+
+            did:webs settles the question and its answer transfers. There, the hosted did.json
+            *is* the did:web form: the sibling repo's `to_did_web` rewrites `id`, `controller`
+            and the matching verification-method controllers and puts the did:webs DID in
+            `alsoKnownAs`, and the spec makes it mandatory — "The `did:web` version of the DIDs
+            MUST be the same (minus the `s`) and point to the same `did.json` file". What makes
+            that safe is not the transform but the authorization behind it: the KEL's
+            designated-aliases ACDC must commit to *both* identifiers, so the second DID is one
+            the controller cryptographically asked for rather than one the host invented.
+
+            did:webvh has its own version of that commitment, and this decision uses it. The
+            method makes the parallel did:web optional — "MAY generate a corresponding did:web"
+            — and pairs it with "if this is being done, the did:webvh DIDDoc SHOULD have the
+            corresponding did:web in the alsoKnownAs array". That array lives inside the signed
+            state and is covered by the entry's Data Integrity proof. So: did.json is published
+            if and only if the resolved document's alsoKnownAs names the did:web DID that this
+            DID transforms to, and when it is, it carries the spec's parallel transform rather
+            than the raw resolved document. No commitment in the log, no did.json.
+
+            Rejected publishing the resolved did:webvh document at that location, which is what
+            the reference implementation does. Rejected publishing the parallel did:web
+            unconditionally, which would mint a second identifier on a customer's domain that
+            they never signed for, and which the spec warns loses did:webvh's security for
+            anyone who resolves it. Rejected never publishing did.json, which is strictly
+            conformant — did:webvh needs only did.jsonl — but throws away the reach that is this
+            repo's whole purpose (@b2ag3wmp) for a customer who explicitly asked for it.
+            Accepted tradeoff: a customer who wants the did:web form must put it in their own
+            alsoKnownAs and re-sign, and cannot obtain it by asking the operator.
 
     The AID binding is verified from submitted evidence = decision:
       id: k6fiebmm
@@ -200,7 +240,8 @@ A KERI AID reaches the mainstream DID ecosystem, on a binding Bakobo verified = 
         the invocation itself was wrong and no submission was read. did.jsonl and did.json are
         written under one directory and either all appear or none does — did-witness.json joins
         them unchanged when the log names witnesses, since verifying a threshold Bakobo did not
-        sign (@7ca6mlrg) is still Bakobo's job. Rejected a separate verify verb that prints a
+        sign (@7ca6mlrg) is still Bakobo's job, and did.json joins them only when the log commits
+        to a parallel did:web (@whgskdbb). Rejected a separate verify verb that prints a
         verdict without publishing: it would create a second, weaker notion of "verified" that
         could drift from the one the gate enforces. Accepted tradeoff: an operator who wants to
         check a submission without hosting it must publish to a throwaway directory.
