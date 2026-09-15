@@ -176,6 +176,26 @@ class TestRefusals:
 
 
 class TestActiveUpdateKeys:
+    def test_it_follows_a_key_rotation(self):
+        """Panel finding TST-F1. If this returned the genesis key, bind() would accept a holder of
+        the rotated-away key and refuse the legitimate one -- the failure is silent in both
+        directions, which is why it needs its own fixture rather than a constant-key log."""
+        first, second = AskarSigningKey.generate("ed25519"), AskarSigningKey.generate("ed25519")
+        document = {"@context": ["https://www.w3.org/ns/did/v1"], "id": "did:webvh:{SCID}:example.com"}
+        state = DocumentState.initial(
+            {"updateKeys": [first.multikey], "method": "did:webvh:1.0"}, document
+        )
+        state.sign(first)
+        lines = [state.history_line()]
+        state = state.create_next(params_update={"updateKeys": [second.multikey]})
+        state.sign(first)  # entry 2 is authorized by entry 1's keys, and rotates them
+        lines.append(state.history_line())
+
+        keys = verify.verify(rebuild(lines), parse(state.document_id)).update_keys
+        assert keys == (second.multikey,)
+        assert first.multikey not in keys
+
+
     def test_blank_lines_are_skipped_when_reading_the_update_keys(self):
         """The doors refuse a log with blank lines, so this projection is only ever handed a
         clean one -- but it is a separate pass over the bytes and does not get to assume that."""
@@ -241,13 +261,13 @@ class TestUnmappedProblems:
         refusal = verify._refusal(
             {"error": "invalidDid", "problemDetails": {"type": "#brand-new-in-1.1"}}, did
         )
-        assert refusal.code == "e.self.unknown.f"
+        assert refusal.code == "e.self.unknown.resolver.f"
         assert "#brand-new-in-1.1" in str(refusal)
 
     def test_a_refusal_with_no_problem_details_still_attributes(self):
         did, _, _ = mint()
         refusal = verify._refusal({"error": "invalidDid"}, did)
-        assert refusal.code == "e.self.unknown.f"
+        assert refusal.code == "e.self.unknown.resolver.f"
 
     def test_a_list_of_problem_details_uses_the_first(self):
         did, _, _ = mint()
@@ -263,19 +283,19 @@ class TestUnmappedProblems:
     def test_an_empty_list_of_problem_details_still_attributes(self):
         did, _, _ = mint()
         refusal = verify._refusal({"error": "invalidDid", "problemDetails": []}, did)
-        assert refusal.code == "e.self.unknown.f"
+        assert refusal.code == "e.self.unknown.resolver.f"
 
     def test_a_problem_type_that_is_not_a_string_still_attributes(self):
         did, _, _ = mint()
         refusal = verify._refusal(
             {"error": "invalidDid", "problemDetails": {"type": 7}}, did
         )
-        assert refusal.code == "e.self.unknown.f"
+        assert refusal.code == "e.self.unknown.resolver.f"
 
     def test_a_type_with_no_fragment_is_passed_through(self):
         did, _, _ = mint()
         refusal = verify._refusal(
             {"error": "invalidDid", "problemDetails": {"type": "urn:something-else"}}, did
         )
-        assert refusal.code == "e.self.unknown.f"
+        assert refusal.code == "e.self.unknown.resolver.f"
         assert "urn:something-else" in str(refusal)

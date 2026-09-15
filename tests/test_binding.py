@@ -17,6 +17,7 @@ from contextlib import contextmanager
 import base58
 import pytest
 from bakobo.errors import BakoboError
+from hio.base.filing import Filer
 from keri.app import habbing
 from keri.kering import Vrsn_1_0 as V1
 from test_verify import mint
@@ -223,28 +224,52 @@ class TestModuleSurface:
 class TestItLeavesNothingBehind:
     """did-webs strands 32,000 /tmp/keri_* directories because nothing asserted this. Here it is
     asserted at authoring time, where the leak is one line to fix rather than an archaeology
-    problem across an accumulated suite."""
+    problem across an accumulated suite.
 
-    def test_binding_strands_no_keri_temp_directories(self):
-        import glob
+    The temp directory is redirected per-test rather than globbing the real /tmp. Globbing shared
+    state is what makes the sibling's equivalent test flaky -- any other process creating or
+    removing a keri_* directory during the window flips the assertion, and this one flipped once
+    before it was isolated. keripy's mkdtemp and binding._temp_root both resolve through
+    tempfile.gettempdir(), so pointing that at tmp_path makes the assertion about this call alone.
+    """
 
+    def isolate(self, tmp_path, monkeypatch):
+        """Point hio's temp head at tmp_path. binding._temp_root reads the same attribute, so the
+        creation and the teardown stay in agreement -- which is the whole reason it reads that
+        attribute rather than tempfile.gettempdir()."""
+        monkeypatch.setattr(Filer, "TempHeadDir", str(tmp_path))
+        return lambda: {p.name for p in tmp_path.iterdir()}
+
+    def test_binding_strands_no_keri_temp_directories(self, tmp_path, monkeypatch):
         aid, kel, multikey_value = aid_with_key()
         did, result = verified(f"did:webs:example.com:{aid}", update_keys=(multikey_value,))
-        before = set(glob.glob("/tmp/keri_*"))
+        listing = self.isolate(tmp_path, monkeypatch)
+        before = listing()
         binding.bind(result, did, kel)
-        assert set(glob.glob("/tmp/keri_*")) == before
+        assert listing() == before
 
-    def test_a_refused_binding_strands_nothing_either(self):
+    def test_a_refused_binding_strands_nothing_either(self, tmp_path, monkeypatch):
         """The failing path is the one that skips a cleanup, so it gets its own assertion."""
-        import glob
-
         aid, kel, _ = aid_with_key()
         _, _, stranger = aid_with_key()
         did, result = verified(f"did:webs:example.com:{aid}", update_keys=(stranger,))
-        before = set(glob.glob("/tmp/keri_*"))
+        listing = self.isolate(tmp_path, monkeypatch)
+        before = listing()
         with pytest.raises(BakoboError):
             binding.bind(result, did, kel)
-        assert set(glob.glob("/tmp/keri_*")) == before
+        assert listing() == before
+
+    def test_the_isolation_itself_works(self, tmp_path, monkeypatch):
+        """Guards the guard: if redirecting tempdir did not actually move keripy's scratch, both
+        assertions above would pass vacuously by watching an empty directory nothing writes to."""
+        monkeypatch.setattr(Filer, "TempHeadDir", str(tmp_path))
+        hby = habbing.Habery(name="probe", base="", temp=True, version=V1)
+        try:
+            assert any(str(tmp_path) in str(store.path) for store in (hby.ks, hby.db, hby.cf))
+        finally:
+            hby.close(clear=True)
+            for root in binding._temp_roots(hby):
+                shutil.rmtree(root, ignore_errors=True)
 
 
 class TestTheDefensiveEdges:
@@ -271,7 +296,7 @@ class TestTheDefensiveEdges:
             binding.bind(result, did, kel)
         assert raised.value.code == "e.proof.binding.aid.f"
 
-    def test_a_store_outside_the_temp_directory_is_never_removed(self):
+    def test_a_store_outside_the_temp_head_is_never_removed(self):
         """The guard on the rmtree. A walk that fell off its assumption must return None rather
         than hand shutil something very much larger than a scratch keystore."""
         assert binding._temp_root("/usr/lib/python3.14/something") is None

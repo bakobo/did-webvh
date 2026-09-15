@@ -29,10 +29,10 @@ key, under one controller, at this moment.
 from __future__ import annotations
 
 import shutil
-import tempfile
 from pathlib import Path
 
 import base58
+from hio.base.filing import Filer
 from keri.app import habbing
 from keri.kering import Vrsn_1_0 as V1
 
@@ -135,6 +135,12 @@ def _looks_like_a_said(aid: str) -> bool:
     claim like ``did:webs:example.com`` -- where the final segment is a hostname -- is refused for
     the right reason instead of being reported as an AID missing from the stream.
     """
+    # "EFGHID" is not an arbitrary charset: those are KERI derivation codes. E/F/G/H/I are the
+    # self-addressing (digest) codes a transferable AID uses, and D is basic Ed25519. Widening this
+    # set admits AID shapes whose keys this cryptosuite cannot verify, and narrowing it rejects
+    # legitimate AIDs -- either way the failure lands as "not in the stream" rather than as a
+    # refusal that says what was wrong. Change it only alongside _ED25519_CODE (panel finding
+    # MNT-F2).
     return len(aid) == 44 and aid[0] in "EFGHID" and "." not in aid
 
 
@@ -191,14 +197,20 @@ def _temp_roots(hby: habbing.Habery) -> tuple[Path, ...]:
 
 
 def _temp_root(path: str) -> Path | None:
-    """The ancestor of ``path`` sitting directly in the temp directory, or None.
+    """The ancestor of ``path`` sitting directly in hio's temp head directory, or None.
 
-    None whenever ``path`` is not under the temp directory at all, and the caller then removes
-    nothing. Returning an option rather than a path is the point: this value is handed to
+    Asks the thing that *creates* these directories where it puts them. hio's ``Filer.remake``
+    calls ``mkdtemp(dir=Filer.TempHeadDir)`` -- an explicit directory, not the process default --
+    so ``tempfile.gettempdir()`` is the wrong authority even though the two usually agree.
+    ``TempHeadDir`` is set by a platform conditional; where it differs, reading the wrong one
+    makes this return None for every store and the teardown silently stops cleaning up.
+
+    None whenever ``path`` is not under that directory, and the caller then removes nothing.
+    Returning an option rather than a path is deliberate: this value is handed to
     ``shutil.rmtree``, and a walk that fell off its assumption would hand it something very much
     larger than a scratch keystore.
     """
-    root = Path(tempfile.gettempdir()).resolve()
+    root = Path(Filer.TempHeadDir).resolve()
     walked = Path(path).resolve()
     while walked.parent != root:
         if walked.parent == walked:

@@ -157,7 +157,7 @@ class TestTheNegativeMatrix:
 
     def refuse(self, tmp_path, **kwargs) -> tuple[int, str]:
         out = tmp_path / "www"
-        status = cli.main_argv = invoke(tmp_path, out=out, **kwargs)
+        status = invoke(tmp_path, out=out, **kwargs)
         return status, out
 
     def test_an_unparseable_did(self, tmp_path, capsys):
@@ -246,6 +246,7 @@ class TestInternalFaults:
         assert status == cli.EX_FAILURE
         captured = capsys.readouterr().err
         assert "e.self.unknown.f" in captured
+        assert "the resolver" not in captured, "a disk-full fault must not blame the resolver"
         assert "Traceback" not in captured
 
 
@@ -268,3 +269,37 @@ class TestWitnessedSubmissions:
         )
         assert status == 0
         assert artifacts(out) == {"did.jsonl", "did-witness.json"}
+
+
+class TestEvidenceMustMatchClaims:
+    """Both evidence arguments obey one rule: supplied without a claim is refused, not ignored."""
+
+    def test_a_witness_file_for_a_log_naming_no_witnesses_is_refused(self, tmp_path, capsys):
+        """Panel finding CON-F1: this used to exit 0 and publish did-witness.json under the
+        customer's domain -- a file no resolver has a rule for reading."""
+        did, log, _ = mint()
+        container = {"versionId": relines(log)[0]["versionId"], "proof": []}
+        out = tmp_path / "www"
+        status = invoke(
+            tmp_path, log=log, did=did.canonical, witness=json.dumps([container]).encode(), out=out
+        )
+        assert status == cli.EX_FAILURE
+        assert "e.rule.witness.unused-evidence.f" in capsys.readouterr().err
+        assert not out.exists()
+
+    def test_a_witnessed_log_with_proofs_from_a_stranger_is_refused(self, tmp_path, capsys):
+        """Panel finding TST-F3: the operator contract at the CLI for a failing witness threshold."""
+        listed, stranger = AskarSigningKey.generate("ed25519"), AskarSigningKey.generate("ed25519")
+        stranger.kid = f"did:key:{stranger.multikey}#{stranger.multikey}"
+        did, log, _ = mint(
+            witness={"threshold": 1, "witnesses": [{"id": f"did:key:{listed.multikey}"}]}
+        )
+        container = {"versionId": relines(log)[0]["versionId"]}
+        container["proof"] = [di_jcs_sign(container, stranger)]
+        out = tmp_path / "www"
+        status = invoke(
+            tmp_path, log=log, did=did.canonical, witness=json.dumps([container]).encode(), out=out
+        )
+        assert status == cli.EX_FAILURE
+        assert "e.proof.log.witness.f" in capsys.readouterr().err
+        assert not out.exists()

@@ -110,6 +110,12 @@ def to_did_web(document: dict, did: WebvhDid) -> dict | None:
     if web_did not in document.get("alsoKnownAs", []):
         return None
 
+    # The string replacement is deliberate and a structural walk would be wrong. The specification
+    # says to "execute a text replacement across the DIDDoc", because the prefix appears inside
+    # longer strings -- verification-method ids, controller fields, service ids and endpoints --
+    # not only as whole values. A recursive dict walk that rewrote values would leave those
+    # embedded occurrences pointing at did:webvh, producing a mixed-prefix document that a did:web
+    # resolver rejects (panel finding MNT-F3).
     working = deepcopy(document)
     _ensure_services(working, did)
     transformed = json.loads(

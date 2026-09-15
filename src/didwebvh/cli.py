@@ -97,6 +97,7 @@ def _publish(args) -> int:
         clamp.clamp_witness(witness.parsed, did)
 
     verified = verify.verify(log.raw, did, witness=witness.raw if witness else None)
+    _refuse_unused_witness(verified, did, witness)
     binding.bind(verified, did, stream)
 
     directory = publish.publish(args.out, did, verified, log.raw, witness.raw if witness else None)
@@ -104,6 +105,18 @@ def _publish(args) -> int:
         if (directory / name).exists():
             print(directory / name)
     return 0
+
+
+def _refuse_unused_witness(verified, did, witness) -> None:
+    """Refuse a witness file for a log that names no witnesses (this.i nmhqxs5q).
+
+    The same rule binding.bind applies to an unused --stream, for the same reason: an operator who
+    passed a file believed it was doing something. Publishing it instead would put a
+    did-witness.json under a customer's domain that no resolver has a rule for reading, since
+    witness proofs are consulted only when the log's witness parameter names witnesses.
+    """
+    if witness is not None and not verified.metadata.get("witness"):
+        raise errors.WITNESS_EVIDENCE_UNUSED(did=did.canonical)
 
 
 def _open(door, path: str | None, flag: str, did):
@@ -142,6 +155,11 @@ def main(argv=None) -> int:
         print(refused, file=sys.stderr)
         return EX_FAILURE
     except Exception as fault:  # noqa: BLE001 - an unattributable fault is still ours to report
-        print(errors.RESOLUTION_UNMAPPED(did=getattr(args, "did", "the submission"),
-                                         kind=f"{type(fault).__name__}: {fault}"), file=sys.stderr)
+        print(
+            errors.INTERNAL_FAULT(
+                did=getattr(args, "did", "the submission"),
+                fault=f"{type(fault).__name__}: {fault}",
+            ),
+            file=sys.stderr,
+        )
         return EX_FAILURE

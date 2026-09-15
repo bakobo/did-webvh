@@ -114,15 +114,11 @@ later need to know *why*) may skip intent entirely — just delete `this.i.seed`
 
 ## Testing Protocol
 
-This repository appears to have no test suite yet. Before writing feature code
-or fixing bugs, propose an appropriate testing framework for this project type
-and add a single trivially-passing test to confirm the setup works. In the
-same commit, propose to change AGENTS.md to replace this instruction with one
-that instructs agents to follow strict TDD from now on: write failing tests
-that capture happy path and edge cases/unhappy paths for each requirement,
-observe them fail, implement until tests pass, never checkin without proving
-that all tests pass, aim for 100% of all new code, and always leave existing
-code better tested than it was before you touched it.
+Follow strict TDD. For each requirement, write failing tests that capture the happy path and its
+edge cases and unhappy paths, observe them fail, then implement until they pass. Never check in
+without proving that all tests pass. The suite runs under a 100% branch-coverage gate
+(`uv run pytest`), enforced in CI; a branch no test can reach is a signal the branch should not
+exist, so delete it rather than reaching for a pragma.
 
 ## CI and Documentation
 

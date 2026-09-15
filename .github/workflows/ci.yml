@@ -25,7 +25,10 @@ jobs:
           enable-cache: true
 
       - name: Sync dependencies
-        run: uv sync
+        # --frozen, so a pyproject/uv.lock divergence fails the job instead of being silently
+        # resolved away. Without it CI can pass against a dependency set the lockfile never saw,
+        # which for three git-SHA-pinned deps means testing something nobody can reproduce.
+        run: uv sync --frozen
 
       - name: Lint
         run: uv run ruff check .

@@ -253,3 +253,28 @@ class TestFailsClean:
         with pytest.raises(BakoboError):
             bounds.open_log(path, DID)
         assert sorted(p.name for p in tmp_path.iterdir()) == before
+
+
+class TestDeeplyNestedJson:
+    """Panel finding SEC-F2. json.loads raises RecursionError, not ValueError, so this used to
+    escape the door and reach an operator as "please report it" instead of a refusal."""
+
+    def nested(self, depth: int = 40_000) -> bytes:
+        return (b"[" * depth) + (b"]" * depth)
+
+    def test_a_deeply_nested_log_line_is_refused_as_malformed_input(self, tmp_path):
+        path = write(tmp_path, "did.jsonl", self.nested() + b"\n")
+        with pytest.raises(BakoboError) as raised:
+            bounds.open_log(path, DID)
+        assert raised.value.code == "e.input.format.log.f"
+
+    def test_a_deeply_nested_witness_file_is_refused_as_malformed_input(self, tmp_path):
+        path = write(tmp_path, "did-witness.json", self.nested())
+        with pytest.raises(BakoboError) as raised:
+            bounds.open_witness(path, DID)
+        assert raised.value.code == "e.input.format.witness.f"
+
+    def test_it_stays_under_the_size_bound(self):
+        """If the payload were over the bound the range check would catch it first, and this
+        would prove nothing about the parse."""
+        assert len(self.nested()) < bounds.LOG.limit

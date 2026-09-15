@@ -108,6 +108,11 @@ _REQUIRED = {
 #: The members every ``did-witness.json`` element carries.
 _REQUIRED_WITNESS = {"versionId": str, "proof": list}
 
+# json.loads raises RecursionError -- not a ValueError -- on deeply nested input, and a size-legal
+# ~100 KB payload is enough to trigger it. Caught alongside ValueError at both call sites so a
+# hostile submission is refused as malformed input rather than escaping the door and surfacing to
+# an operator as "this service has no handling for it, please report it" (panel finding SEC-F2).
+
 
 def read_bounded(handle: BinaryIO, door: Door, did: WebvhDid) -> bytes:
     """Read at most ``door.limit`` bytes from ``handle``, refusing anything longer.
@@ -176,7 +181,7 @@ def _entry(line: bytes, number: int, did: WebvhDid) -> dict:
         )
     try:
         entry = json.loads(line)
-    except ValueError as exc:
+    except (ValueError, RecursionError) as exc:
         raise errors.LOG_MALFORMED(
             did=did.canonical, line=number, problem="the line is not JSON"
         ) from exc
@@ -226,7 +231,7 @@ def open_witness(path: Path | str, did: WebvhDid) -> Admitted:
     payload = _read(path, WITNESS, did)
     try:
         proofs = json.loads(payload)
-    except ValueError as exc:
+    except (ValueError, RecursionError) as exc:
         raise errors.WITNESS_MALFORMED(did=did.canonical, problem="the file is not JSON") from exc
     if not isinstance(proofs, list):
         raise errors.WITNESS_MALFORMED(

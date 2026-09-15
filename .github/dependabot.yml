@@ -1,0 +1,30 @@
+# Dependabot security updates are a repository setting and cover the PyPI graph already. This file
+# adds the scheduled *version* updates that setting does not, and is the only place the three
+# git-SHA-pinned runtime dependencies get any automated attention at all (panel finding OPS-F3).
+#
+# Those three -- did-webvh, keri and bakobo-errors -- are pinned to commits rather than releases,
+# deliberately (this.i 327yhyvd). Dependabot cannot bump a bare git SHA in pyproject.toml, so what
+# follows does NOT watch them; nothing does, and that is the honest state. A bump is a human
+# decision that must re-run the conformance work 327yhyvd names, because an unreleased HEAD is not
+# a version number you can trust on sight.
+version: 2
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps"
+
+  # The actions are SHA-pinned (oss-posture item 10), which makes them invisible to a human
+  # reading a diff for version drift. Dependabot does understand action SHAs and will propose the
+  # bump with the tag in the message, which is the only reason those pins stay legible.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "ci"

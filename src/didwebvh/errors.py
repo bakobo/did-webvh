@@ -16,7 +16,7 @@ both refuse a malformed identifier need two codes, because a caller prefix-match
 what the module actually declares, having found the registry by type rather than by a hand-kept
 list -- so the sentence is a gate, not decoration.
 
-Codes declared here: 25.
+Codes declared here: 27.
 """
 
 from __future__ import annotations
@@ -31,6 +31,7 @@ __all__ = [
     "CRYPTOSUITE_FORBIDDEN",
     "DID_INVALID",
     "HASH_FORBIDDEN",
+    "INTERNAL_FAULT",
     "LOG_DID_MISMATCH",
     "LOG_HASH_FAILED",
     "LOG_MALFORMED",
@@ -48,6 +49,7 @@ __all__ = [
     "STREAM_EMPTY",
     "STREAM_TOO_LARGE",
     "TOO_LARGE",
+    "WITNESS_EVIDENCE_UNUSED",
     "WITNESS_MALFORMED",
     "WITNESS_TOO_LARGE",
 ]
@@ -259,7 +261,7 @@ RESOLUTION_MISDRIVEN = ErrorCode(
 )
 
 RESOLUTION_UNMAPPED = ErrorCode(
-    "e.self.unknown.f",
+    "e.self.unknown.resolver.f",
     "The verifier refused the log for a reason this service does not recognize.",
     detail="While verifying {did}, the resolver reported {kind}, which this service has no "
     "handling for.",
@@ -323,3 +325,30 @@ PUBLISH_FAILED = ErrorCode(
     hint="This is a failure on our side, not in the submission. Nothing partial was published, "
     "and any previous publication of this DID is untouched, so retrying is safe.",
 )
+
+
+WITNESS_EVIDENCE_UNUSED = ErrorCode(
+    "e.rule.witness.unused-evidence.f",
+    "Witness proofs were submitted for a log that names no witnesses.",
+    detail="The log for {did} declares no witness parameter, so the submitted did-witness.json "
+    "proves nothing and will not be published.",
+    args=("did",),
+    hint="Either the witness parameter is missing from the log, or the file was passed by "
+    "mistake. Refused rather than ignored, and refused rather than hosted -- publishing it would "
+    "put a file under your domain that no resolver has any rule for reading.",
+)
+# The sibling of e.rule.binding.unused-evidence.f, for the other evidence argument. Two codes and
+# not one: an operator fixing this needs to know which file was surplus.
+
+
+INTERNAL_FAULT = ErrorCode(
+    "e.self.unknown.f",
+    "This service failed in a way it does not recognize.",
+    detail="While publishing {did}, this service hit a fault it has no handling for: {fault}.",
+    args=("did", "fault"),
+    hint="This is a defect on our side rather than a problem with your submission, which may be "
+    "perfectly valid. Nothing was published. Please report it with the command you ran.",
+)
+# The genuine catch-all, and the reason RESOLUTION_UNMAPPED moved to e.self.unknown.resolver.f:
+# the two were sharing a code, so a disk-full error reached operators claiming "the resolver
+# reported" something, which sent them to look in the wrong place (panel finding MNT-F4).
