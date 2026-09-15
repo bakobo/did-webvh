@@ -1,0 +1,67 @@
+[project]
+name = "didwebvh"
+version = "0.0.0"
+description = "Publish did:webvh DIDs on Bakobo infrastructure — a verified log in, hosted artifacts out."
+readme = "README.md"
+requires-python = ">=3.14"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Bakobo LLC" }]
+dependencies = [
+    # DIF's reference implementation of the method (this.i decision 327yhyvd). Pinned to a git
+    # commit, NOT to the PyPI release, and the distinction is load-bearing: did-webvh 1.0.1
+    # (uploaded 2026-07-17, still the latest release) canonicalizes through `jsoncanon`, which is
+    # not RFC 8785-conformant for large integers or for exponent forms -- {"n": 10000000000000000000}
+    # becomes a JSON *string*, 1e-7 becomes 1e-07. SCIDs, entry hashes and every Data Integrity
+    # proof hash are computed over JCS output, so a DID carrying such a number hashes differently
+    # from every other implementation. Upstream replaced it with `jcs` on 2026-08-17 and has never
+    # released since; 905f5e1 is the merge that landed it.
+    #
+    # Verified 2026-09-14 before this pin was chosen: this commit, keri below, and bakobo-errors
+    # resolve and import together on CPython 3.14.6, and `did_webvh.core.proof` imports `jcs`.
+    # Any bump must re-run tests/conformance -- an unreleased HEAD is not a version number you
+    # can trust on sight.
+    "did-webvh @ git+https://github.com/decentralized-identity/didwebvh-py@905f5e1b67db617655d94d25427c965f619cda6c",
+    # The estate pin, following did-webs rather than diverging from it. Needed here only for the
+    # AID binding (this.i decision k6fiebmm): verifying a submitted KEL and reading the AID's
+    # current signing key. Nothing else in this repo touches KERI.
+    "keri @ git+https://github.com/bakobo/keripy@366d81071aea7be5b8ad35acbed815e1255224d5",
+    # The shared ErrorCode/BakoboError machinery didwebvh/errors.py is built on.
+    "bakobo-errors @ git+https://github.com/bakobo/errors@45f42ae4259cce144fe1d668c9c176d869c3023a",
+    # IDNA2008 with UTS-46 processing, which step 3 of the DID-to-HTTPS transformation names
+    # explicitly. CPython's built-in "idna" codec is IDNA2003: it happens to produce the right
+    # A-labels for the spec's own worked example, but it does not lowercase, and it accepts an
+    # underscore, a leading or trailing hyphen, and an over-long label -- so building on it would
+    # mean hand-rolling the rules this package already implements, against an older standard than
+    # the one the spec cites.
+    "idna>=3.6",
+]
+
+[project.scripts]
+didwebvh = "didwebvh.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=5",
+    "ruff",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+# The three git-pinned dependencies above are direct references; hatchling refuses them otherwise.
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/didwebvh"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=didwebvh --cov-branch --cov-report=term-missing --cov-fail-under=100"
+
+[tool.coverage.run]
+branch = true
+source = ["didwebvh"]
+
