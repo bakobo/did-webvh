@@ -76,6 +76,37 @@ A KERI AID reaches the mainstream DID ecosystem, on a binding Bakobo verified = 
         merge. Accepted tradeoff: Bakobo refuses DIDs that the reference implementation created,
         so the refusal has to say exactly that, and the finding belongs upstream as a bug report.
 
+    Publishing verbatim is what forces the clamp to be strict = decision:
+      id: t2jkfguj
+      why: >
+        The clamp (@tvv6dvyn) states the version-policy rules itself rather than checking only
+        the places didwebvh-py is known to be wrong today. A clamp written as a patch list would
+        silently stop covering a rule the day upstream refactored around it, and the whole point
+        of @tvv6dvyn is not to inherit the library's acceptance decision. So: the permitted
+        cryptosuite, the permitted hash algorithm, the acceptable `method` values and the closed
+        parameter set are enforced here on their own terms, and if the library later enforces
+        them too that is redundancy rather than waste.
+
+        The hard case is the JSON `null`. The specification says `null` **MUST NOT** be used for a
+        parameter, because it destroys the typing that says what a deactivated value means — and
+        then adds a note that resolvers **SHOULD** gracefully accept it and convert it to the
+        parameter's default, since early implementations emitted it. Those two rules point in
+        opposite directions and a publisher has to pick one.
+
+        This gate refuses it, and the reason is @gzvt7mpn rather than strictness for its own sake.
+        Because did.jsonl is published byte-for-byte, Bakobo cannot take the resolver's option:
+        accepting a `null` and normalising it is exactly what we are unable to do, so "accept
+        gracefully" would mean hosting a log that violates a MUST NOT under a customer's domain
+        and relying on every future resolver to be lenient about it. Rejected accepting-and-
+        normalising, which @gzvt7mpn forbids. Rejected accepting-and-publishing-anyway, which
+        makes Bakobo the party that put a non-conformant artifact on the web.
+
+        Accepted tradeoff, and it is a real one: a customer whose log was minted by an older tool
+        that emitted `null` cannot publish here until they re-sign it, and every resolver in the
+        ecosystem would have accepted it. The refusal has to say that plainly — that the log is
+        publishable elsewhere and not here, and why — rather than reading as though the log were
+        broken.
+
     Bakobo holds no key in the DID's trust path = decision:
       id: 7ca6mlrg
       why: >
