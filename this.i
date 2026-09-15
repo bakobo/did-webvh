@@ -142,6 +142,39 @@ A KERI AID reaches the mainstream DID ecosystem, on a binding Bakobo verified = 
             it goes on did-webs' soft-spots list for the ToIP task force. Revisit if the
             designated-aliases table gains a row for foreign DIDs.
 
+    The identifier is a value type, and the worked example outranks the ABNF = decision:
+      id: x7ad5zds
+      why: >
+        `did:webvh` identifiers enter this codebase through one parsed, normalized value type
+        (`WebvhDid`) rather than being passed around as strings and re-parsed at each use. The
+        normalized fields are what compares; the input string is kept only for diagnostics, so a
+        `%3a` port separator and a mixed-case domain cannot produce two objects that name the same
+        DID and fail to be equal. Rejected passing the raw string and validating at the point of
+        use, which is how a publish path ends up disagreeing with a verify path about whether two
+        DIDs are the same.
+
+        Where the v1.0 specification contradicts itself, this follows the worked example rather
+        than the ABNF. `encoded-domain-label` and `webvh-path-segment` are both ASCII-only
+        productions -- `webvh-path-segment = 1*idchar`, and DID Core's `idchar` admits nothing
+        above U+007F -- yet the same section's example is `did:webvh:{SCID}:jp納豆.例.jp:用户`, and
+        the transformation section gives its expected HTTPS URL. Both cannot hold. Chose the
+        example, because it is what implementations are tested against and what the IDNA2008 step
+        in the transformation presupposes; an ASCII-only reading would make that step dead text.
+        Rejected enforcing the ABNF literally and refusing the specification's own example.
+        Accepted tradeoff: this parser accepts identifiers a literal ABNF reading forbids, which
+        is the permissive direction and therefore the one that can publish a DID a stricter
+        resolver will not read. Tick ~4lcd carries it upstream to DIF, where a plain issue is
+        allowed.
+
+        Artifact directories are the *decoded* path segment, not the percent-encoded one, because
+        a static file server decodes a request path before it looks up a file. Rejected naming
+        directories by their encoded form, which would serve `%E7%94%A8%E6%88%B7` only from a
+        server that happens not to decode.
+
+        Every parse failure raises one code rather than a taxonomy. An operator acts on "this is
+        not a valid identifier" and reads which rule failed in the message; a code per ABNF
+        production would be a vocabulary nobody branches on.
+
     Publish first; resolving and serving come later = decision:
       id: cx2fyuyz
       why: >
