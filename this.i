@@ -410,6 +410,15 @@ A KERI AID reaches the mainstream DID ecosystem, on artifacts Bakobo verified = 
         conformance suite has to carry the weight a second independent implementation normally
         would.
 
+        DISCHARGED 2026-09-15. That last sentence was a promise with nothing behind it until an
+        adversarial review (ARC-F1) pointed out that every test minted and verified through the
+        same library -- a closed round-trip that would keep passing while our canonicalization
+        drifted away from everyone else. tests/test_conformance.py now runs DIF's pinned vectors,
+        which carry per-implementation artifacts from Rust, TypeScript, Java and Dart. It found
+        three real defects on its first run: a clamp that refused the specification's own "no
+        witnesses" value, a resolved document missing the implicit services every other
+        implementation emits, and an upstream crash on a mismatched did:key (tick ~7iu4).
+
     One verb, and an operator contract that never publishes a partial DID = decision:
       id: nmhqxs5q
       why: >

@@ -1,0 +1,30 @@
+description: "Witness configuration with duplicated witness ID — threshold must reject this"
+spec_ref: "https://identity.foundation/didwebvh/v1.0/#witnesses"
+negative: true
+
+keys:
+  - id: key-0
+    type: ed25519
+    seed: "0000000000000000000000000000000000000000000000000000000000000001"
+  - id: wit-0
+    type: ed25519
+    seed: "0000000000000000000000000000000000000000000000000000000000000010"
+
+steps:
+  - op: create
+    domain: example.com
+    signer: key-0
+    timestamp: "2000-01-01T00:00:00Z"
+    params:
+      updateKeys: ["key-0"]
+      # Same witness listed twice with threshold=2: a single proof from wit-0
+      # would count toward the threshold N times if the implementation iterates
+      # the configured list without per-witness dedup.
+      witness:
+        threshold: 2
+        witnesses:
+          - id: wit-0
+          - id: wit-0
+
+  - op: resolve
+    expectError: invalidParameters

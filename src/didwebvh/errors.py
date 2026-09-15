@@ -16,7 +16,7 @@ both refuse a malformed identifier need two codes, because a caller prefix-match
 what the module actually declares, having found the registry by type rather than by a hand-kept
 list -- so the sentence is a gate, not decoration.
 
-Codes declared here: 22.
+Codes declared here: 23.
 """
 
 from __future__ import annotations
@@ -36,6 +36,7 @@ __all__ = [
     "LOG_NOT_PORTABLE",
     "LOG_SIGNATURE_FAILED",
     "LOG_TOO_LARGE",
+    "LOG_UNDIAGNOSED",
     "LOG_UNREADABLE",
     "LOG_WITNESS_FAILED",
     "METHOD_UNACCEPTABLE",
@@ -297,3 +298,19 @@ INTERNAL_FAULT = ErrorCode(
 # The genuine catch-all, and the reason RESOLUTION_UNMAPPED moved to e.self.unknown.resolver.f:
 # the two were sharing a code, so a disk-full error reached operators claiming "the resolver
 # reported" something, which sent them to look in the wrong place (panel finding MNT-F4).
+
+
+LOG_UNDIAGNOSED = ErrorCode(
+    "e.proof.log.undiagnosed.f",
+    "A log entry failed verification, and the verifier could not say why.",
+    detail="The log submitted for {did} was refused while being verified, but the failure "
+    "arrived as {fault} rather than as a described verification error, so this message cannot "
+    "name the entry or the rule.",
+    args=("did", "fault"),
+    hint="The log is not published and the refusal is real -- this is not a service fault. The "
+    "imprecision is a known defect in the verifier we depend on (tick ~7iu4), reported upstream. "
+    "A did:key whose body and fragment name different keys is the case that produces it.",
+)
+# e.proof.* and not e.self.*: the submission IS invalid, and the verifier did refuse it. Only the
+# diagnosis is missing. Attributing this to ourselves would tell a customer with a bad log that
+# their log was fine and our service was broken.

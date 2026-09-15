@@ -125,19 +125,14 @@ class TestTheParallelDidWeb:
         aliases = json.loads((directory / "did.json").read_text())["alsoKnownAs"]
         assert "did:web:example.com" not in aliases
 
-    def test_implicit_services_are_added_when_the_document_lacks_them(self, tmp_path):
-        verified = result(aliases=[web_form(DID)], services=False)
-        directory = publish.publish(tmp_path, DID, verified, LOG, None)
-        document = json.loads((directory / "did.json").read_text())
-        kinds = {service["type"] for service in document["service"]}
-        assert kinds == {"relativeRef", "LinkedVerifiablePresentation"}
-        assert document["service"][0]["serviceEndpoint"] == "https://example.com/"
-
-    def test_existing_services_are_not_duplicated(self, tmp_path):
+    def test_the_services_are_carried_through_untouched(self, tmp_path):
+        """verify.verify puts the implicit services in the resolved document, so by the time the
+        did:web transform runs they are already there and it only rewrites the prefix."""
         verified = result(aliases=[web_form(DID)])
         directory = publish.publish(tmp_path, DID, verified, LOG, None)
         document = json.loads((directory / "did.json").read_text())
         assert len(document["service"]) == 2
+        assert all(s["id"].startswith("did:web:example.com#") for s in document["service"])
 
     def test_an_unrelated_service_survives_alongside_the_implicit_ones(self, tmp_path):
         verified = result(aliases=[web_form(DID)])

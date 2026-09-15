@@ -1,0 +1,36 @@
+description: "Proof verificationMethod where did:key body and fragment refer to different keys"
+spec_ref: "https://identity.foundation/didwebvh/v1.0/#authorized-keys-for-the-new-did-log-entry"
+negative: true
+
+keys:
+  - id: key-authorized
+    type: ed25519
+    seed: "0000000000000000000000000000000000000000000000000000000000000001"
+  - id: key-attacker
+    type: ed25519
+    seed: "00000000000000000000000000000000000000000000000000000000000000ff"
+
+steps:
+  - op: create
+    domain: example.com
+    signer: key-attacker
+    timestamp: "2000-01-01T00:00:00Z"
+    params:
+      updateKeys: ["key-authorized"]
+
+  # Rewrite the proof's verificationMethod so the fragment names the
+  # authorized key but the did:key body names the attacker's key. The
+  # signature bytes (over the entry) verify against whichever key the
+  # implementation decodes from. Vulnerable implementations decode the
+  # body for signature verification but check the fragment against
+  # updateKeys — passing both checks despite the body/fragment mismatch.
+  - op: corrupt
+    entry: 0
+    when: after-sign
+    mutation: replace-proof-field
+    field: verificationMethod
+    # Constructed: did:key:<key-attacker>#<key-authorized>
+    value: "did:key:{KEY_ATTACKER}#{KEY_AUTHORIZED}"
+
+  - op: resolve
+    expectError: invalidProof

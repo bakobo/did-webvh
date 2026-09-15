@@ -1,0 +1,271 @@
+{
+  "cases": {
+    "basic-create": {
+      "implementations": [
+        "dart",
+        "java",
+        "java-eecc",
+        "python",
+        "rust",
+        "ts"
+      ],
+      "negative": false
+    },
+    "basic-update": {
+      "implementations": [
+        "dart",
+        "java",
+        "java-eecc",
+        "python",
+        "rust",
+        "ts"
+      ],
+      "negative": false
+    },
+    "deactivate": {
+      "implementations": [
+        "dart",
+        "java",
+        "java-eecc",
+        "python",
+        "rust",
+        "ts"
+      ],
+      "negative": false
+    },
+    "key-rotation": {
+      "implementations": [
+        "dart",
+        "java",
+        "java-eecc",
+        "python",
+        "rust",
+        "ts"
+      ],
+      "negative": false
+    },
+    "multi-update": {
+      "implementations": [
+        "dart",
+        "java",
+        "java-eecc",
+        "python",
+        "rust",
+        "ts"
+      ],
+      "negative": false
+    },
+    "multiple-update-keys": {
+      "implementations": [
+        "java-eecc",
+        "python",
+        "rust",
+        "ts"
+      ],
+      "negative": false
+    },
+    "negative-cross-did-witness-replay": {
+      "implementations": [
+        "ts"
+      ],
+      "negative": true,
+      "witnessed": [
+        "ts"
+      ]
+    },
+    "negative-did-key-body-fragment-mismatch": {
+      "implementations": [
+        "ts"
+      ],
+      "negative": true
+    },
+    "negative-duplicate-witness-ids": {
+      "implementations": [
+        "ts"
+      ],
+      "negative": true
+    },
+    "negative-fragment-leaks-into-domain": {
+      "implementations": [
+        "rust"
+      ],
+      "negative": true
+    },
+    "negative-lowercase-pct-port-ip": {
+      "implementations": [
+        "rust"
+      ],
+      "negative": true
+    },
+    "negative-path-traversal-did": {
+      "implementations": [
+        "rust"
+      ],
+      "negative": true
+    },
+    "negative-pct-encoded-ip-host": {
+      "implementations": [
+        "rust"
+      ],
+      "negative": true
+    },
+    "negative-pct-encoded-traversal": {
+      "implementations": [
+        "rust"
+      ],
+      "negative": true
+    },
+    "negative-portable-scid-swap": {
+      "implementations": [
+        "ts"
+      ],
+      "negative": true
+    },
+    "negative-pre-rotation-omit-updatekeys": {
+      "implementations": [
+        "ts"
+      ],
+      "negative": true
+    },
+    "negative-scid-mismatch-genesis": {
+      "implementations": [
+        "ts"
+      ],
+      "negative": true
+    },
+    "negative-unknown-method-version": {
+      "implementations": [
+        "ts"
+      ],
+      "negative": true
+    },
+    "negative-versiontime-future": {
+      "implementations": [
+        "ts"
+      ],
+      "negative": true
+    },
+    "negative-versiontime-non-monotonic": {
+      "implementations": [
+        "ts"
+      ],
+      "negative": true
+    },
+    "negative-witness-update-threshold-not-met": {
+      "implementations": [
+        "ts"
+      ],
+      "negative": true,
+      "witnessed": [
+        "ts"
+      ]
+    },
+    "negative-wrong-cryptosuite": {
+      "implementations": [
+        "ts"
+      ],
+      "negative": true
+    },
+    "negative-zero-witness-threshold": {
+      "implementations": [
+        "ts"
+      ],
+      "negative": true
+    },
+    "portable": {
+      "implementations": [
+        "dart",
+        "java",
+        "java-eecc",
+        "python",
+        "rust",
+        "ts"
+      ],
+      "negative": false
+    },
+    "portable-move": {
+      "implementations": [
+        "dart",
+        "java",
+        "java-eecc",
+        "python",
+        "rust",
+        "ts"
+      ],
+      "negative": false
+    },
+    "pre-rotation": {
+      "implementations": [
+        "dart",
+        "java",
+        "java-eecc",
+        "python",
+        "rust",
+        "ts"
+      ],
+      "negative": false
+    },
+    "pre-rotation-consume": {
+      "implementations": [
+        "dart",
+        "java",
+        "java-eecc",
+        "python",
+        "rust",
+        "ts"
+      ],
+      "negative": false
+    },
+    "services": {
+      "implementations": [
+        "dart",
+        "java",
+        "java-eecc",
+        "python",
+        "rust",
+        "ts"
+      ],
+      "negative": false
+    },
+    "witness-threshold": {
+      "implementations": [
+        "dart",
+        "java",
+        "java-eecc",
+        "python",
+        "rust",
+        "ts"
+      ],
+      "negative": false,
+      "witnessed": [
+        "dart",
+        "java",
+        "java-eecc",
+        "python",
+        "rust",
+        "ts"
+      ]
+    },
+    "witness-update": {
+      "implementations": [
+        "dart",
+        "java",
+        "java-eecc",
+        "python",
+        "rust",
+        "ts"
+      ],
+      "negative": false,
+      "witnessed": [
+        "dart",
+        "java",
+        "java-eecc",
+        "python",
+        "rust",
+        "ts"
+      ]
+    }
+  },
+  "commit": "6cee1dd54fef1b62412facf895a9f1cacf7bbe5d",
+  "source": "decentralized-identity/didwebvh-test-suite"
+}

@@ -47,13 +47,6 @@ DID_JSONL = "did.jsonl"
 DID_JSON = "did.json"
 DID_WITNESS = "did-witness.json"
 
-#: The implicit services every did:webvh DID has, whether or not its document lists them. Both
-#: are added to the parallel did:web document when absent, because a did:web resolver has no
-#: did:webvh rules to derive them from and would otherwise lose the DID's files and whois.
-_FILES = "relativeRef"
-_WHOIS = "LinkedVerifiablePresentation"
-
-
 def refuse_foreign_alias(document: dict, did: WebvhDid) -> None:
     """Refuse a document that claims another party's identity (this.i plhyphrk).
 
@@ -134,9 +127,10 @@ def to_did_web(document: dict, did: WebvhDid) -> dict | None:
     commitment -- the same role the designated-aliases ACDC plays in did:webs, where the host
     likewise publishes a second identifier only because the controller authorized it.
 
-    Follows the specification's steps in order: add the implicit services if absent, replace the
-    ``did:webvh:<scid>:`` prefix throughout, put the did:webvh DID in ``alsoKnownAs``, and drop
-    duplicates including the did:web DID itself.
+    Follows the specification's steps in order. Step 2 -- adding the implicit services when
+    absent -- has already happened by the time this runs: :func:`didwebvh.verify.verify` puts them
+    in the resolved document, because that is where every other implementation puts them. What is
+    left here is the prefix replacement, the ``alsoKnownAs`` entry, and the deduplication.
     """
     web_did = f"did:web:{did.canonical.removeprefix(f'did:webvh:{did.scid}:')}"
     if web_did not in document.get("alsoKnownAs", []):
@@ -149,7 +143,6 @@ def to_did_web(document: dict, did: WebvhDid) -> dict | None:
     # embedded occurrences pointing at did:webvh, producing a mixed-prefix document that a did:web
     # resolver rejects (panel finding MNT-F3).
     working = deepcopy(document)
-    _ensure_services(working, did)
     transformed = json.loads(
         json.dumps(working).replace(f"did:webvh:{did.scid}:", "did:web:")
     )
@@ -160,30 +153,6 @@ def to_did_web(document: dict, did: WebvhDid) -> dict | None:
         if alias != web_did and alias not in aliases[:position]
     ]
     return transformed
-
-
-def _ensure_services(document: dict, did: WebvhDid) -> None:
-    """Add whichever implicit service the document is missing, leaving any other service alone."""
-    services = document.setdefault("service", [])
-    present = {service.get("type") for service in services if isinstance(service, dict)}
-    if _FILES not in present:
-        services.insert(
-            0,
-            {
-                "id": f"{did.canonical}#files",
-                "type": _FILES,
-                "serviceEndpoint": did.base_url(),
-            },
-        )
-    if _WHOIS not in present:
-        services.append(
-            {
-                "@context": "https://identity.foundation/linked-vp/contexts/v1",
-                "id": f"{did.canonical}#whois",
-                "type": _WHOIS,
-                "serviceEndpoint": f"{did.base_url()}whois.vp",
-            }
-        )
 
 
 def _place(directory: Path, name: str, payload: bytes) -> Path:

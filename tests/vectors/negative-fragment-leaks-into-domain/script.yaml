@@ -1,0 +1,11 @@
+description: "DID URL where the fragment leaks into the host segment via parser bug"
+spec_ref: "https://identity.foundation/didwebvh/v1.0/#did-method-specific-identifier"
+negative: true
+
+steps:
+  # A swapped-variable parser bug can leave the fragment glued to the host
+  # when no query is present. The vulnerable code path then sees
+  # domain="127.0.0.1#x", which is not an IpAddr and slips past IP-rejection.
+  - op: resolve-did
+    did: "did:webvh:Qm0000000000000000000000000000000000000000000000:127.0.0.1#x"
+    expectError: invalidDid
