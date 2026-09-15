@@ -16,7 +16,7 @@ both refuse a malformed identifier need two codes, because a caller prefix-match
 what the module actually declares, having found the registry by type rather than by a hand-kept
 list -- so the sentence is a gate, not decoration.
 
-Codes declared here: 22.
+Codes declared here: 25.
 """
 
 from __future__ import annotations
@@ -42,6 +42,7 @@ __all__ = [
     "LOG_WITNESS_FAILED",
     "METHOD_UNACCEPTABLE",
     "PARAMETER_REFUSED",
+    "PUBLISH_FAILED",
     "RESOLUTION_MISDRIVEN",
     "RESOLUTION_UNMAPPED",
     "STREAM_EMPTY",
@@ -310,4 +311,15 @@ BINDING_KEY_MISMATCH = ErrorCode(
     hint="The binding is about control right now, so a key the AID has rotated away from does "
     "not satisfy it. Rotate the did:webvh updateKeys to the AID's current key, or the AID to "
     "the update key.",
+)
+
+
+PUBLISH_FAILED = ErrorCode(
+    "e.self.resource.publish.f",
+    "The verified artifacts could not be written.",
+    detail="Everything submitted for {did} verified, but writing the artifacts failed: "
+    "{problem}.",
+    args=("did", "problem"),
+    hint="This is a failure on our side, not in the submission. Nothing partial was published, "
+    "and any previous publication of this DID is untouched, so retrying is safe.",
 )

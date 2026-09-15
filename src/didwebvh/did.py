@@ -99,6 +99,19 @@ class WebvhDid:
         """Where this DID's witness proofs live: the log URL, with the final file replaced."""
         return self.log_url().removesuffix("did.jsonl") + "did-witness.json"
 
+    def base_url(self) -> str:
+        """The base the implicit ``#files`` and ``#whois`` services hang off.
+
+        Not the directory the log sits in, for a DID with no path segments. The transformation
+        section says that when the algorithm is used for a DID URL path rather than for the log,
+        step 5 drops the ``.well-known`` segment -- so a bare-domain DID's files live under
+        ``https://example.com/`` even though its log is at ``https://example.com/.well-known/``.
+        Deriving this from :meth:`log_url` would quietly inherit that segment and point every
+        implicit service at the wrong place.
+        """
+        path = "".join(f"{part}/" for part in (_encode(s) for s in self.path))
+        return f"https://{self.authority}/{path}"
+
     def artifact_parts(self) -> tuple[str, ...]:
         """The directories this DID's artifacts belong in, under a web root.
 

@@ -208,6 +208,32 @@ class TestHttpsTransformation:
         assert "%E7%94%A8" in parse(f"did:webvh:{SCID}:example.com:用户").log_url()
 
 
+class TestBaseUrl:
+    """What the implicit services hang off, which is not where the log lives."""
+
+    @pytest.mark.parametrize(
+        ("did", "base"),
+        [
+            (f"did:webvh:{SCID}:example.com", "https://example.com/"),
+            (f"did:webvh:{SCID}:example.com%3A3000", "https://example.com:3000/"),
+            (f"did:webvh:{SCID}:example.com:dids:issuer", "https://example.com/dids/issuer/"),
+            (f"did:webvh:{SCID}:jp\u7d0d\u8c46.\u4f8b.jp:\u7528\u6237", "https://xn--jp-cd2fp15c.xn--fsq.jp/%E7%94%A8%E6%88%B7/"),
+        ],
+    )
+    def test_base_url(self, did, base):
+        assert parse(did).base_url() == base
+
+    def test_well_known_never_appears_in_the_base(self):
+        """The log is under .well-known for a bare-domain DID; its files are not."""
+        parsed = parse(f"did:webvh:{SCID}:example.com")
+        assert ".well-known" in parsed.log_url()
+        assert ".well-known" not in parsed.base_url()
+
+    def test_the_base_always_ends_in_a_slash(self):
+        for did in (f"did:webvh:{SCID}:example.com", f"did:webvh:{SCID}:example.com:a:b"):
+            assert parse(did).base_url().endswith("/")
+
+
 class TestArtifactLocation:
     """Where the files land under the directory an operator names, as opposed to in a URL."""
 
