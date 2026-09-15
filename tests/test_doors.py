@@ -40,11 +40,29 @@ PRIMITIVES = {
     "stdin",
     "environ",
     "getenv",
-    "urlopen",
-    "urlretrieve",
-    "get",
-    "post",
-    "request",
+}
+
+#: Modules that would put a socket in this package. Phase 1 is host-side with no network I/O
+#: (this.i cx2fyuyz), so the guarantee worth asserting is that none of these is imported at all --
+#: which is stronger than chasing call sites, and does not misfire.
+#:
+#: Chasing them by call name is what the first version of this test did, with `get`, `post` and
+#: `request` in PRIMITIVES above. Every `dict.get` in the package matched. A census that cries
+#: wolf is worse than none, because the fix under deadline is to add an exemption rather than to
+#: look.
+#: Matched as dotted prefixes, not top-level packages, because `urllib` is two libraries wearing
+#: one name: `urllib.request` opens sockets and `urllib.parse` is string manipulation that did.py
+#: legitimately uses for percent-encoding. A top-level match flagged it on the first run.
+NETWORK_MODULES = {
+    "http",
+    "httpx",
+    "requests",
+    "socket",
+    "urllib.request",
+    "urllib.error",
+    "aiohttp",
+    "ssl",
+    "ftplib",
 }
 
 #: Every boundary call site that is not itself a door, each with the reason it needs none.
@@ -142,3 +160,24 @@ def test_write_mode_detection(snippet, expected):
     """The one judgment in the walker that could silently exempt a real read."""
     call = ast.parse(snippet, mode="eval").body
     assert _write_mode(call) is expected
+
+
+def test_the_package_opens_no_sockets():
+    """Phase 1 publishes from submitted files and reaches nothing (this.i cx2fyuyz)."""
+    offenders = []
+    for path in sorted(SOURCE.rglob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                names = [alias.name for alias in node.names]
+            elif isinstance(node, ast.ImportFrom):
+                names = [node.module or ""]
+            else:
+                continue
+            for name in names:
+                if any(name == m or name.startswith(f"{m}.") for m in NETWORK_MODULES):
+                    offenders.append(f"{path.name}:{node.lineno} imports {name}")
+    assert not offenders, (
+        "phase 1 has no network I/O; a resolver phase that needs one must say so in this.i "
+        f"first: {offenders}"
+    )

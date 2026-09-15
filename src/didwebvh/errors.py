@@ -16,7 +16,7 @@ both refuse a malformed identifier need two codes, because a caller prefix-match
 what the module actually declares, having found the registry by type rather than by a hand-kept
 list -- so the sentence is a gate, not decoration.
 
-Codes declared here: 7.
+Codes declared here: 11.
 """
 
 from __future__ import annotations
@@ -24,9 +24,13 @@ from __future__ import annotations
 from bakobo.errors import ErrorCode
 
 __all__ = [
+    "CRYPTOSUITE_FORBIDDEN",
     "DID_INVALID",
+    "HASH_FORBIDDEN",
     "LOG_MALFORMED",
     "LOG_TOO_LARGE",
+    "METHOD_UNACCEPTABLE",
+    "PARAMETER_REFUSED",
     "STREAM_EMPTY",
     "STREAM_TOO_LARGE",
     "TOO_LARGE",
@@ -110,4 +114,48 @@ WITNESS_MALFORMED = ErrorCode(
     args=("did", "problem"),
     hint="did-witness.json is a JSON array of objects, each with a versionId string and a proof "
     "array.",
+)
+
+
+# --- The conformance clamp (this.i tvv6dvyn, t2jkfguj). One family, e.rule.conformance.*, so an
+# operator can prefix-match "your log does not conform to the method version it declares" without
+# branching on which rule caught it. `rule` and not `feature`: these are not capabilities we chose
+# not to build, they are norms the specification states and this gate enforces.
+
+METHOD_UNACCEPTABLE = ErrorCode(
+    "e.rule.conformance.method.f",
+    "The log declares a did:webvh specification version this service will not publish.",
+    detail="Entry {entry} of the log for {did} declares method {found}; the only acceptable "
+    "value is did:webvh:1.0.",
+    args=("did", "entry", "found"),
+    hint="An unrecognized method value is never downgraded, defaulted or ignored -- the "
+    "specification requires resolution to terminate, so publication does too.",
+)
+
+CRYPTOSUITE_FORBIDDEN = ErrorCode(
+    "e.rule.conformance.cryptosuite.f",
+    "A proof uses a cryptosuite this did:webvh version forbids.",
+    detail="In the log for {did}, {where} carries {found}; did:webvh:1.0 permits exactly "
+    "eddsa-jcs-2022, for log entry proofs and witness proofs alike.",
+    args=("did", "where", "found"),
+    hint="The reference Python implementation will mint an ecdsa-jcs-2019 log and resolve it, "
+    "but no other implementation will read it. Re-mint with an Ed25519 key.",
+)
+
+HASH_FORBIDDEN = ErrorCode(
+    "e.rule.conformance.hash.f",
+    "A hash in the log is not the SHA-256 multihash this did:webvh version requires.",
+    detail="In the log for {did}, {where} is unusable: {problem}.",
+    args=("did", "where", "problem"),
+    hint="did:webvh:1.0 permits SHA-256 only, as a base58btc-encoded multihash with the 0x12 "
+    "0x20 prefix. Any other algorithm terminates resolution.",
+)
+
+PARAMETER_REFUSED = ErrorCode(
+    "e.rule.conformance.parameter.f",
+    "A log parameter is one this did:webvh version does not permit.",
+    detail="Entry {entry} of the log for {did} is unpublishable: {problem}.",
+    args=("did", "entry", "problem"),
+    hint="The parameters object may carry only the properties this specification version "
+    "defines, each with a real value rather than the deprecated JSON null.",
 )

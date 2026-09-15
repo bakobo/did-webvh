@@ -34,6 +34,10 @@ dependencies = [
     # mean hand-rolling the rules this package already implements, against an older standard than
     # the one the spec cites.
     "idna>=3.6",
+    # base58btc decoding, to read the multihash prefix inside an SCID, an entry hash and a
+    # pre-rotation key hash. did-webvh already depends on it; declared here because the clamp
+    # uses it directly, and a transitive dependency is not a promise.
+    "base58>=2.1.0",
 ]
 
 [project.scripts]
