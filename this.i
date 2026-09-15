@@ -322,8 +322,9 @@ A KERI AID reaches the mainstream DID ecosystem, on a binding Bakobo verified = 
     One verb, and an operator contract that never publishes a partial DID = decision:
       id: nmhqxs5q
       why: >
-        The command line is `didwebvh publish --log <did.jsonl> --stream <keri.cesr>
-        --did <did:webvh:...> --out <dir>`, one verb, mirroring didwebs' single-verb surface and
+        The command line is `didwebvh publish --did <did:webvh:...> --log <did.jsonl>
+        [--witness <did-witness.json>] [--stream <keri.cesr>] --out <dir>`, one verb, mirroring
+        didwebs' single-verb surface and
         for the same reason: minting a DID means signing with the controller's update key, and
         under @7ca6mlrg that is not a thing an operator can be asked to run against a customer's
         DID. Exit 0 with every artifact present, or a nonzero exit with nothing written and one
@@ -332,7 +333,15 @@ A KERI AID reaches the mainstream DID ecosystem, on a binding Bakobo verified = 
         written under one directory and either all appear or none does — did-witness.json joins
         them unchanged when the log names witnesses, since verifying a threshold Bakobo did not
         sign (@7ca6mlrg) is still Bakobo's job, and did.json joins them only when the log commits
-        to a parallel did:web (@whgskdbb). Rejected a separate verify verb that prints a
+        to a parallel did:web (@whgskdbb).
+
+        Both evidence arguments are optional at the command line and mandatory whenever the
+        submission asks for them: `--witness` when the log names witnesses, `--stream` when the
+        document claims a did:webs sibling (@k6fiebmm). Making them unconditionally required
+        would force an operator to invent an empty file for a DID that has neither, and making
+        them ignorable would let a missing one pass as "nothing to check". Supplying either
+        without the corresponding claim is refused rather than ignored, for the same reason: an
+        operator who passed a file believed it was doing something. Rejected a separate verify verb that prints a
         verdict without publishing: it would create a second, weaker notion of "verified" that
         could drift from the one the gate enforces. Accepted tradeoff: an operator who wants to
         check a submission without hosting it must publish to a throwaway directory.
