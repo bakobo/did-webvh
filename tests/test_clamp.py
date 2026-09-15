@@ -70,6 +70,13 @@ class TestAcceptsWhatTheVersionAllows:
     def test_a_single_proof_object_is_clamped_like_a_list_of_one(self):
         clamp.clamp(log(entry(1, proof=proof())), DID)
 
+    def test_an_empty_witness_object_means_no_witnesses(self):
+        """The specification's own "off" value: witness "defaults to {} if not set in the first
+        log entry". Two of the five implementations in DIF's vector suite emit it explicitly, and
+        an earlier version of this clamp refused all of them."""
+        params = {"method": "did:webvh:1.0", "scid": SCID, "witness": {}}
+        clamp.clamp(log(entry(1, parameters=params)), DID)
+
     def test_every_v1_parameter_is_allowed(self):
         params = {
             "method": "did:webvh:1.0",
