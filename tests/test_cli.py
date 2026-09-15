@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import json
 
+import pytest
 from did_webvh.askar import AskarSigningKey
 from did_webvh.core.proof import di_jcs_sign
-from keri.kering import Vrsn_1_0 as V1
-from test_binding import aid_with_key, as_multikey, scratch
+from did_webvh.core.state import DocumentState
 from test_verify import mint, rebuild, relines
 
 from didwebvh import cli
@@ -24,15 +24,13 @@ def write(tmp_path, name: str, payload: bytes) -> str:
     return str(path)
 
 
-def invoke(tmp_path, *, log: bytes, did=None, witness=None, stream=None, out=None):
+def invoke(tmp_path, *, log: bytes, did=None, witness=None, out=None):
     """Run `didwebvh publish`, returning its exit status."""
     argv = ["publish", "--log", write(tmp_path, "did.jsonl", log)]
     argv += ["--did", did]
     argv += ["--out", str(out if out is not None else tmp_path / "www")]
     if witness is not None:
         argv += ["--witness", write(tmp_path, "did-witness.json", witness)]
-    if stream is not None:
-        argv += ["--stream", write(tmp_path, "keri.cesr", stream)]
     return cli.main(argv)
 
 
@@ -54,55 +52,6 @@ class TestTheHappyPath:
         invoke(tmp_path, log=log, did=did.canonical, out=out)
         printed = capsys.readouterr().out.splitlines()
         assert printed == [str(out / ".well-known" / "did.jsonl")]
-
-    def test_a_bound_submission_publishes(self, tmp_path):
-        """The whole pipeline, and the capability the repo exists for: one Ed25519 key that is
-        both a KERI AID's current signing key and the did:webvh log's update key."""
-        _, kel, did, log = bound_submission()
-        out = tmp_path / "www"
-        assert invoke(tmp_path, log=log, did=did, stream=kel, out=out) == 0
-        assert artifacts(out) == {"did.jsonl"}
-
-    def test_the_binding_is_not_merely_declared(self, tmp_path):
-        """Same submission, but the KEL is a different AID's: the claim is then unproven."""
-        _, _, did, log = bound_submission()
-        _, other_kel, _ = aid_with_key()
-        assert invoke(tmp_path, log=log, did=did, stream=other_kel) == cli.EX_FAILURE
-
-
-def bound_submission():
-    """One Ed25519 seed, inceptioned as a KERI AID and used as a did:webvh update key.
-
-    keripy accepts an explicit private key through ``secrecies``, so both stacks can be handed the
-    same 32 bytes. That is what makes this a real end-to-end binding rather than two fixtures that
-    agree because a test arranged it.
-    """
-    import os
-
-    from did_webvh.core.state import DocumentState
-    from keri.core import signing
-
-    seed = os.urandom(32)
-    signer = signing.Signer(raw=seed, transferable=True)
-    with scratch() as hby:
-        hab = hby.makeHab(name="c", version=V1, secrecies=[[signer.qb64]])
-        aid = hab.pre
-        kel = bytes(hab.replay(pre=hab.pre, gvrsn=V1))
-        aid_multikey = as_multikey(hab.kever.verfers[0].raw)
-
-    key = AskarSigningKey.from_secret_bytes("ed25519", seed)
-    assert key.multikey == aid_multikey, "the two stacks must agree about this key"
-
-    document = {
-        "@context": ["https://www.w3.org/ns/did/v1"],
-        "id": "did:webvh:{SCID}:example.com",
-        "alsoKnownAs": [f"did:webs:example.com:{aid}"],
-    }
-    state = DocumentState.initial(
-        {"updateKeys": [key.multikey], "method": "did:webvh:1.0"}, document
-    )
-    state.sign(key)
-    return aid, kel, state.document_id, (json.dumps(state.history_line()) + "\n").encode()
 
 
 class TestUsageErrors:
@@ -134,15 +83,6 @@ class TestUsageErrors:
         )
         assert status == cli.EX_USAGE
         assert "--witness" in capsys.readouterr().err
-
-    def test_an_unreadable_stream(self, tmp_path, capsys):
-        did, log, _ = mint()
-        status = cli.main(
-            ["publish", "--did", did.canonical, "--log", write(tmp_path, "did.jsonl", log),
-             "--stream", str(tmp_path / "nope.cesr"), "--out", str(tmp_path / "www")]
-        )
-        assert status == cli.EX_USAGE
-        assert "--stream" in capsys.readouterr().err
 
     def test_a_usage_error_publishes_nothing(self, tmp_path):
         did, _, _ = mint()
@@ -203,21 +143,6 @@ class TestTheNegativeMatrix:
         status, out = self.refuse(tmp_path, log=log, did=other.canonical)
         assert status == cli.EX_FAILURE
         assert "e.rule.conformance.parameter.f" in capsys.readouterr().err
-        assert not out.exists()
-
-    def test_a_claimed_sibling_with_no_stream(self, tmp_path, capsys):
-        _, _, did, log = bound_submission()
-        status, out = self.refuse(tmp_path, log=log, did=did)
-        assert status == cli.EX_FAILURE
-        assert "e.input.missing.binding-evidence.f" in capsys.readouterr().err
-        assert not out.exists()
-
-    def test_a_stream_with_no_claimed_sibling(self, tmp_path, capsys):
-        _, kel, _ = aid_with_key()
-        did, log, _ = mint()
-        status, out = self.refuse(tmp_path, log=log, did=did.canonical, stream=kel)
-        assert status == cli.EX_FAILURE
-        assert "e.rule.binding.unused-evidence.f" in capsys.readouterr().err
         assert not out.exists()
 
     def test_a_witness_file_off_the_data_model(self, tmp_path, capsys):
@@ -303,3 +228,56 @@ class TestEvidenceMustMatchClaims:
         assert status == cli.EX_FAILURE
         assert "e.proof.log.witness.f" in capsys.readouterr().err
         assert not out.exists()
+
+
+class TestTheHostingStance:
+    """this.i plhyphrk: a document claiming another party's identity is refused, not republished.
+
+    Not a verification failure. Nothing is checked, because nothing in either method makes such a
+    claim checkable and a did:webvh artifact has nowhere to record that a host tried.
+    """
+
+    def claiming(self, alias: str):
+        key = AskarSigningKey.generate("ed25519")
+        document = {
+            "@context": ["https://www.w3.org/ns/did/v1"],
+            "id": "did:webvh:{SCID}:example.com",
+            "alsoKnownAs": [alias],
+        }
+        state = DocumentState.initial(
+            {"updateKeys": [key.multikey], "method": "did:webvh:1.0"}, document
+        )
+        state.sign(key)
+        return state.document_id, (json.dumps(state.history_line()) + "\n").encode()
+
+    def test_a_did_webs_alias_is_refused(self, tmp_path, capsys):
+        did, log = self.claiming("did:webs:example.com:ENro7uf0ePmiK3jdTo2YCdXLqW7z7xoP6qhhBou6gBLe")
+        out = tmp_path / "www"
+        assert invoke(tmp_path, log=log, did=did, out=out) == cli.EX_FAILURE
+        assert "e.rule.hosting.foreign-alias.f" in capsys.readouterr().err
+        assert not out.exists()
+
+    def test_the_refusal_says_it_is_our_policy_not_the_method(self, tmp_path, capsys):
+        """A customer whose log is fine elsewhere must not read this as 'your log is broken'."""
+        did, log = self.claiming("did:webs:example.com:ENro7uf0ePmiK3jdTo2YCdXLqW7z7xoP6qhhBou6gBLe")
+        invoke(tmp_path, log=log, did=did)
+        message = capsys.readouterr().err
+        assert "hosting policy" in message
+        assert "another host may well publish it" in message
+
+    @pytest.mark.parametrize(
+        "alias",
+        [
+            "did:web:example.com",
+            "https://example.com/about",
+            "did:key:z6MkabcDEF",
+            "did:webvh:QmaigaGjpv2GNnN5D2tyd1XZLY8PnRTDtgHYCiV964ooMn:other.example",
+        ],
+    )
+    def test_every_other_kind_of_alias_publishes_untouched(self, tmp_path, alias):
+        """The refusal is narrow. An ordinary URL, a did:web, a key, even another did:webvh --
+        none of them is a claim about a KERI-identified third party."""
+        did, log = self.claiming(alias)
+        out = tmp_path / "www"
+        assert invoke(tmp_path, log=log, did=did, out=out) == 0
+        assert (out / ".well-known" / "did.jsonl").exists()

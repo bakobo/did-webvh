@@ -37,7 +37,11 @@ from didwebvh import errors
 from didwebvh.did import WebvhDid
 from didwebvh.verify import Verified
 
-__all__ = ["DID_JSON", "DID_JSONL", "DID_WITNESS", "publish", "to_did_web"]
+__all__ = ["DID_JSON", "DID_JSONL", "DID_WITNESS", "WEBS", "publish", "refuse_foreign_alias", "to_did_web"]
+
+#: The did:webs method prefix. An alsoKnownAs entry beginning with it names a KERI AID, which is
+#: another party's identity as far as this document is concerned.
+WEBS = "did:webs:"
 
 DID_JSONL = "did.jsonl"
 DID_JSON = "did.json"
@@ -48,6 +52,34 @@ DID_WITNESS = "did-witness.json"
 #: did:webvh rules to derive them from and would otherwise lose the DID's files and whois.
 _FILES = "relativeRef"
 _WHOIS = "LinkedVerifiablePresentation"
+
+
+def refuse_foreign_alias(document: dict, did: WebvhDid) -> None:
+    """Refuse a document that claims another party's identity (this.i plhyphrk).
+
+    Not a verification failure -- nothing is checked here, and nothing could be. Neither did:webvh
+    nor did:webs defines a verifiable link between a did:webvh DID and a foreign identity, and a
+    did:webvh artifact has nowhere to record that a host checked one, so any assurance would be
+    invisible to every party that reads the published document. Rather than republish an unchecked
+    assertion about a third party under a customer's domain and over Bakobo's name, this refuses.
+
+    A hosting policy, stated as one. The method permits the alias and another host may publish it.
+    The sibling repo reached the same position from the other side: did-webs drops an alias whose
+    AID binding it cannot check, "because publishing an unverifiable alias under Bakobo's domain
+    would fail open".
+
+    Everything else in ``alsoKnownAs`` is untouched -- an ordinary URL, a did:web, the DID's own
+    prior string after a move. Only a foreign *identity* claim is refused.
+
+    Raises:
+        bakobo.errors.BakoboError: ``e.rule.hosting.foreign-alias.f``.
+    """
+    aliases = document.get("alsoKnownAs", [])
+    if not isinstance(aliases, list):
+        return  # shape is the door's business; a non-list carries no alias to refuse
+    for alias in aliases:
+        if isinstance(alias, str) and alias.startswith(WEBS):
+            raise errors.FOREIGN_ALIAS_REFUSED(did=did.canonical, alias=alias)
 
 
 def publish(

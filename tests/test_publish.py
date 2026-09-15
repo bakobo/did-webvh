@@ -269,3 +269,37 @@ class TestTheEdgesOfAtomicity:
             publish.publish(tmp_path, PATHED, result(PATHED), LOG, None)
         assert (neighbour / "did.jsonl").read_bytes() == b"someone else\n"
         assert not (tmp_path / "dids" / "issuer").exists()
+
+
+class TestTheHostingRule:
+    """this.i plhyphrk, at the unit level. The CLI tests cover the operator contract."""
+
+    def test_a_did_webs_alias_is_refused(self):
+        did = DID
+        with pytest.raises(BakoboError) as raised:
+            publish.refuse_foreign_alias(
+                {"id": did.canonical, "alsoKnownAs": ["did:webs:example.com:EAbc"]}, did
+            )
+        assert raised.value.code == "e.rule.hosting.foreign-alias.f"
+
+    def test_a_document_with_no_aliases_passes(self):
+        publish.refuse_foreign_alias({"id": DID.canonical}, DID)
+
+    def test_an_alsoknownas_that_is_not_a_list_is_left_to_the_door(self):
+        """Shape is bounds.py's job. A non-list carries no alias, so there is nothing to refuse,
+        and inventing a second shape check here would be a second opinion that could drift."""
+        publish.refuse_foreign_alias({"id": DID.canonical, "alsoKnownAs": "did:webs:x:E"}, DID)
+
+    def test_a_non_string_entry_is_skipped_rather_than_crashed_on(self):
+        publish.refuse_foreign_alias({"id": DID.canonical, "alsoKnownAs": [7, None]}, DID)
+
+    def test_it_refuses_on_the_first_offending_alias_of_several(self):
+        with pytest.raises(BakoboError) as raised:
+            publish.refuse_foreign_alias(
+                {
+                    "id": DID.canonical,
+                    "alsoKnownAs": ["did:web:example.com", "did:webs:example.com:EAbc"],
+                },
+                DID,
+            )
+        assert "EAbc" in str(raised.value)

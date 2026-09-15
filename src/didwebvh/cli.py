@@ -1,9 +1,9 @@
 """The ``didwebvh`` command line: one verb, and one operator contract.
 
 ``didwebvh publish --did <did:webvh:...> --log <did.jsonl> [--witness <did-witness.json>]
-[--stream <keri.cesr>] --out <dir>`` runs the whole phase-1 pipeline: bound and shape the
-submission, clamp what ``did:webvh:1.0`` forbids, walk the log with didwebvh-py, prove any
-claimed did:webs sibling against the submitted KEL, and write the artifacts atomically.
+--out <dir>`` runs the whole phase-1 pipeline: bound and shape the submission, clamp what
+``did:webvh:1.0`` forbids, walk the log with didwebvh-py, refuse a document claiming another
+party's identity, and write the artifacts atomically.
 
 **One verb, deliberately** (this.i nmhqxs5q). Minting a DID means signing with the controller's
 update key, and Bakobo holds no key in a customer's trust path (this.i 7ca6mlrg), so there is
@@ -18,7 +18,7 @@ submission was read. An internal fault reports ``e.self.unknown.f`` rather than 
 traceback masquerade as a bad submission.
 
 **The order is the design.** Size, then shape, then version policy, then cryptography, then the
-binding, then the write. Each step is only trustworthy because the one before it ran, and the
+hosting rule, then the write. Each step is only trustworthy because the one before it ran, and the
 clamp in particular runs before didwebvh-py sees a byte (this.i tvv6dvyn).
 
 **Who is running this.** In phase 1 the operator asserts that the submission is the controller's:
@@ -33,7 +33,7 @@ import sys
 
 from bakobo.errors import BakoboError
 
-from didwebvh import binding, bounds, clamp, errors, publish, verify
+from didwebvh import bounds, clamp, errors, publish, verify
 from didwebvh.did import parse as parse_did
 
 __all__ = ["main"]
@@ -74,11 +74,6 @@ def _parser() -> _Parser:
         "--witness", help="the controller's did-witness.json; required when the log names witnesses"
     )
     publishing.add_argument(
-        "--stream",
-        help="the KERI event log of the AID behind a claimed did:webs sibling; required when the "
-        "document claims one",
-    )
-    publishing.add_argument(
         "--out", required=True, help="directory the DID's host serves artifacts from"
     )
     return parser
@@ -90,7 +85,6 @@ def _publish(args) -> int:
 
     log = _open(bounds.open_log, args.log, "--log", did)
     witness = _open(bounds.open_witness, args.witness, "--witness", did)
-    stream = _open(bounds.open_stream, args.stream, "--stream", did)
 
     clamp.clamp(log.parsed, did)
     if witness is not None:
@@ -98,7 +92,7 @@ def _publish(args) -> int:
 
     verified = verify.verify(log.raw, did, witness=witness.raw if witness else None)
     _refuse_unused_witness(verified, did, witness)
-    binding.bind(verified, did, stream)
+    publish.refuse_foreign_alias(verified.document, did)
 
     directory = publish.publish(args.out, did, verified, log.raw, witness.raw if witness else None)
     for name in (publish.DID_WITNESS, publish.DID_JSONL, publish.DID_JSON):
@@ -110,8 +104,8 @@ def _publish(args) -> int:
 def _refuse_unused_witness(verified, did, witness) -> None:
     """Refuse a witness file for a log that names no witnesses (this.i nmhqxs5q).
 
-    The same rule binding.bind applies to an unused --stream, for the same reason: an operator who
-    passed a file believed it was doing something. Publishing it instead would put a
+    An operator who passed a file believed it was doing something, so a surplus one is refused
+    rather than discarded. Publishing it instead would put a
     did-witness.json under a customer's domain that no resolver has a rule for reading, since
     witness proofs are consulted only when the log's witness parameter names witnesses.
     """

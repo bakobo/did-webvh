@@ -53,6 +53,10 @@ PRIMITIVES = {
 #: Matched as dotted prefixes, not top-level packages, because `urllib` is two libraries wearing
 #: one name: `urllib.request` opens sockets and `urllib.parse` is string manipulation that did.py
 #: legitimately uses for percent-encoding. A top-level match flagged it on the first run.
+#: Modules that would put KERI back in this package. keripy left on 2026-09-15 with the AID
+#: binding (this.i plhyphrk), and the guard below is what stops it drifting back in.
+KERI_MODULES = {"keri", "keria", "signify", "cesride", "hio"}
+
 NETWORK_MODULES = {
     "http",
     "httpx",
@@ -180,4 +184,62 @@ def test_the_package_opens_no_sockets():
     assert not offenders, (
         "phase 1 has no network I/O; a resolver phase that needs one must say so in this.i "
         f"first: {offenders}"
+    )
+
+
+def test_the_package_does_not_verify_cross_identity_claims():
+    """this.i plhyphrk: this repo declines to verify that a did:webvh DID and another party's
+    identity are the same subject, and the decision is load-bearing rather than incidental.
+
+    Read this before making it pass. Neither did:webvh nor did:webs defines a verifiable link
+    between a did:webvh DID and a foreign identity. A did:webvh artifact has nowhere to record
+    that a host checked one, so any assurance is invisible to every party that reads the published
+    document -- it is a claim about our process, not about the DID. An earlier version of this
+    repo built such a check anyway; it accepted a victim's PUBLIC key appearing in a log's
+    updateKeys as proof of shared control, which it is not, and would have certified false
+    linkages under customer domains.
+
+    If a future phase has somewhere to put the answer -- a Bakobo resolver, say, returning
+    clearly-labelled metadata of its own -- then this guard is wrong and should go. Retire it in
+    the same change that records that decision in this.i, not before, and not by deleting the
+    import that happens to be failing.
+    """
+    offenders = []
+    for path in sorted(SOURCE.rglob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                names = [alias.name for alias in node.names]
+            elif isinstance(node, ast.ImportFrom):
+                names = [node.module or ""]
+            else:
+                continue
+            for name in names:
+                if name.split(".")[0] in KERI_MODULES:
+                    offenders.append(f"{path.name}:{node.lineno} imports {name}")
+    assert not offenders, (
+        "this package imports a KERI library. It has no KERI content by design, and the only "
+        "reason it ever did was a cross-identity binding that was withdrawn as unverifiable. "
+        f"Read this test's docstring before making it pass: {offenders}"
+    )
+
+
+def test_publication_refuses_a_foreign_identity_alias():
+    """The behavioural half of the guard above, so the rule survives a refactor that satisfies
+    the import check by other means."""
+    from bakobo.errors import BakoboError
+
+    from didwebvh import publish
+    from didwebvh.did import parse
+
+    did = parse("did:webvh:QmaigaGjpv2GNnN5D2tyd1XZLY8PnRTDtgHYCiV964ooMn:example.com")
+    try:
+        publish.refuse_foreign_alias(
+            {"id": did.canonical, "alsoKnownAs": ["did:webs:example.com:EAbc"]}, did
+        )
+    except BakoboError:
+        return
+    raise AssertionError(
+        "a document claiming another party's KERI identity was accepted for publication. "
+        "See this.i plhyphrk and the docstring of test_the_package_does_not_verify_cross_identity_claims."
     )
