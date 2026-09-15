@@ -237,6 +237,33 @@ A KERI AID reaches the mainstream DID ecosystem, on a binding Bakobo verified = 
         bytes outside a door — which is the point, since a new unguarded read never looks wrong
         when you write it.
 
+    The published did:web document carries the implicit services = decision:
+      id: bivmcppg
+      why: >
+        RECORDED AFTER THE FACT, which is a defect in how it arrived rather than in the decision.
+        The adversarial review of 2026-09-15 (ARC's sibling lens, finding CON-F2) caught that
+        publish._ensure_services injects two services into the did:web document this repo
+        publishes — a `relativeRef` at `#files` and a `LinkedVerifiablePresentation` at `#whois`,
+        with endpoints derived from the DID — and that @whgskdbb records only *when* did.json is
+        published, never what goes in it. An output shape a stranger's resolver reads is an
+        external contract, so methodology §3 wanted a node before the code and did not get one.
+
+        The decision itself: step 2 of the specification's parallel-did:web procedure says the
+        implicit services **MUST** be added if not already present, so their absence would make
+        the published document non-conformant. They are added only when missing, and any other
+        service in the document is left alone. The endpoints come from @x7ad5zds's `base_url`
+        rather than from the log URL, because the specification drops the `.well-known` segment
+        for DID-URL paths and deriving them from the log location would point every implicit
+        service one directory too deep.
+
+        Rejected publishing the resolved document's services verbatim and trusting the controller
+        to have included them: a did:web resolver has no did:webvh rules to derive them from, so a
+        document missing them silently loses the DID's files and whois for exactly the audience
+        the parallel publication exists to serve. Accepted tradeoff: Bakobo adds content the
+        controller did not sign. That is defensible only because the addition is specified rather
+        than invented, and it is confined to the derived document — the log this is computed from
+        is published byte-for-byte and is never touched (@gzvt7mpn).
+
     The AID binding is verified from submitted evidence = decision:
       id: k6fiebmm
       why: >
