@@ -146,6 +146,35 @@ A KERI AID reaches the mainstream DID ecosystem, on a binding Bakobo verified = 
             Accepted tradeoff: a customer who wants the did:web form must put it in their own
             alsoKnownAs and re-sign, and cannot obtain it by asking the operator.
 
+    Three doors, each with a number on it = constraint:
+      id: 43ukbqca
+      why: >
+        Everything that crosses into this process arrives through one of three named doors and is
+        bounded before it is parsed: the DID log, the KEL stream, and the witness file. The
+        interview should have asked this and did not, so it is recorded now rather than left to
+        the module that happens to open a file first
+        (dev/standards/input-handling.md, "the standing question").
+
+        Size first, then shape, then meaning. Every check this repo makes about what bytes *mean*
+        — the clamp, the library's walk, the AID binding — runs after those bytes are in memory,
+        so none of it starts if the submission is simply too large. A door reads at most its bound
+        plus one byte and refuses on the overage, rather than reading the file and then measuring
+        it, because a length check that first reads the whole thing is not a bound.
+
+        The numbers are flood guards and are not opinions about what a real payload weighs: 8 MiB
+        for the log, 1 MiB for any single entry within it, 10,000 entries, 8 MiB for the KEL
+        stream, 4 MiB for the witness file. A did:webvh entry carries a whole DID document and
+        runs a few kilobytes; a DID rotating weekly for two centuries would not reach the entry
+        count. Do not tune these as though they were capacity planning — if a legitimate
+        submission ever approaches one, that is a finding about the submission.
+
+        Rejected relying on the operator to have checked, since phase 1 is host-side and the file
+        came from a customer. Rejected bounding only in the CLI, which would leave the library
+        surface unbounded for the resolver phase that follows. Accepted tradeoff: three more
+        refusal codes, and a census test that fails whenever someone adds a call site that reads
+        bytes outside a door — which is the point, since a new unguarded read never looks wrong
+        when you write it.
+
     The AID binding is verified from submitted evidence = decision:
       id: k6fiebmm
       why: >
