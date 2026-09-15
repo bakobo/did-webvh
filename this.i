@@ -107,6 +107,37 @@ A KERI AID reaches the mainstream DID ecosystem, on a binding Bakobo verified = 
         publishable elsewhere and not here, and why — rather than reading as though the log were
         broken.
 
+    The walk is the library's, entry point and all = decision:
+      id: sug4xtzk
+      why: >
+        Verification drives didwebvh-py's `DidResolver`, not its parts. Assembling
+        `load_history_line` and `HistoryVerifier.verify_state` by hand looks equivalent and is
+        not: `check_version_id()` — the entry-hash check, which is most of what makes a log a
+        chain rather than a list — is invoked only from `DidResolver`'s own loop
+        (core/resolver.py:381), and witness verification only from `resolve_state`. A hand-rolled
+        walk would verify every signature and silently skip the chain, and would look right doing
+        it. Rejected assembling the primitives for a synchronous call path, which is what tempted
+        us: `DidResolver` is async, so this module owns an `asyncio.run` it would rather not have.
+
+        The log is handed over in memory through the library's own `HistoryResolver` extension
+        point rather than by path. `LocalHistoryResolver` would re-read the file — a second read,
+        unbounded, of something our doors already bounded (@43ukbqca), and of a file that could
+        have changed in between. Rejected writing the bounded bytes to a temp file to satisfy the
+        path-shaped API.
+
+        An unmapped problem type is reported as *our* fault, not the submitter's. If the library
+        refuses for a reason this package has never heard of, the submission may be perfectly
+        good and the gap is certainly ours, so the message says so and asks for a report.
+        Rejected a generic "your log was rejected", which would blame a customer for our gap.
+        The mapping is kept total by a test that reads the problem types out of the installed
+        library rather than from a list maintained here, so a pin bump that adds a failure mode
+        breaks the build instead of reaching a customer as an internal fault.
+
+        Accepted tradeoff across all three: this module is coupled to library internals —
+        `HistoryResolver`, `ProblemDetails` type strings, the `resolution_metadata` shape — that
+        are not a stable public API. That coupling is deliberate and is the price of not owning
+        a verifier; the totality test is what turns a silent break into a loud one.
+
     Bakobo holds no key in the DID's trust path = decision:
       id: 7ca6mlrg
       why: >
