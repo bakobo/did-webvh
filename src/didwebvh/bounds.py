@@ -32,6 +32,7 @@ __all__ = [
     "MAX_ENTRY_BYTES",
     "STREAM",
     "WITNESS",
+    "Admitted",
     "Door",
     "open_log",
     "open_stream",
@@ -40,6 +41,24 @@ __all__ = [
 ]
 
 _MIB = 1024 * 1024
+
+
+@dataclass(frozen=True)
+class Admitted:
+    """One artifact that got through its door: the exact bytes, and the parsed view of them.
+
+    Both halves travel together because both are needed and they must not drift. did.jsonl is
+    published byte-for-byte (this.i gzvt7mpn) while the clamp and the library reason over the
+    parse, so re-reading the file to get the bytes back would mean a second, unbounded read of
+    something that could have changed underneath.
+
+    Attributes:
+        raw: exactly what crossed the door.
+        parsed: the objects ``raw`` decodes to, in file order.
+    """
+
+    raw: bytes
+    parsed: tuple[dict, ...]
 
 
 @dataclass(frozen=True)
@@ -121,7 +140,7 @@ def _read(path: Path | str, door: Door, did: WebvhDid) -> bytes:
         return read_bounded(handle, door, did)
 
 
-def open_log(path: Path | str, did: WebvhDid) -> tuple[dict, ...]:
+def open_log(path: Path | str, did: WebvhDid) -> Admitted:
     """Admit a DID log: JSON Lines, one object per line, each carrying the required members.
 
     Args:
@@ -129,7 +148,8 @@ def open_log(path: Path | str, did: WebvhDid) -> tuple[dict, ...]:
         did: the DID being published, for refusal messages.
 
     Returns:
-        The entries, in file order. Their *meaning* is unexamined -- see the module docstring.
+        The submitted bytes, and the entries they decode to in file order. Their *meaning* is
+        unexamined -- see the module docstring.
 
     Raises:
         bakobo.errors.BakoboError: ``e.input.range.log.f`` past a bound, or
@@ -144,7 +164,8 @@ def open_log(path: Path | str, did: WebvhDid) -> tuple[dict, ...]:
     if len(lines) > MAX_ENTRIES:
         raise errors.LOG_TOO_LARGE(did=did.canonical, bound="the entry count", limit=MAX_ENTRIES)
 
-    return tuple(_entry(line, number, did) for number, line in enumerate(lines, start=1))
+    entries = tuple(_entry(line, number, did) for number, line in enumerate(lines, start=1))
+    return Admitted(raw=payload, parsed=entries)
 
 
 def _entry(line: bytes, number: int, did: WebvhDid) -> dict:
@@ -191,7 +212,7 @@ def open_stream(path: Path | str, did: WebvhDid) -> bytes:
     return payload
 
 
-def open_witness(path: Path | str, did: WebvhDid) -> tuple[dict, ...]:
+def open_witness(path: Path | str, did: WebvhDid) -> Admitted:
     """Admit a ``did-witness.json``: an array of ``{versionId, proof}`` objects.
 
     An empty array is accepted. The spec requires the witness file to be published *before* the
@@ -225,4 +246,4 @@ def open_witness(path: Path | str, did: WebvhDid) -> tuple[dict, ...]:
                 raise errors.WITNESS_MALFORMED(
                     did=did.canonical, problem=f"element {position}'s {member} is the wrong type"
                 )
-    return tuple(proofs)
+    return Admitted(raw=payload, parsed=tuple(proofs))

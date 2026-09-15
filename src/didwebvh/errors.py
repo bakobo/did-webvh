@@ -16,7 +16,7 @@ both refuse a malformed identifier need two codes, because a caller prefix-match
 what the module actually declares, having found the registry by type rather than by a hand-kept
 list -- so the sentence is a gate, not decoration.
 
-Codes declared here: 11.
+Codes declared here: 18.
 """
 
 from __future__ import annotations
@@ -27,10 +27,19 @@ __all__ = [
     "CRYPTOSUITE_FORBIDDEN",
     "DID_INVALID",
     "HASH_FORBIDDEN",
+    "LOG_DID_MISMATCH",
+    "LOG_HASH_FAILED",
     "LOG_MALFORMED",
+    "LOG_MALFORMED_DEEP",
+    "LOG_NOT_PORTABLE",
+    "LOG_SIGNATURE_FAILED",
     "LOG_TOO_LARGE",
+    "LOG_UNREADABLE",
+    "LOG_WITNESS_FAILED",
     "METHOD_UNACCEPTABLE",
     "PARAMETER_REFUSED",
+    "RESOLUTION_MISDRIVEN",
+    "RESOLUTION_UNMAPPED",
     "STREAM_EMPTY",
     "STREAM_TOO_LARGE",
     "TOO_LARGE",
@@ -158,4 +167,98 @@ PARAMETER_REFUSED = ErrorCode(
     args=("did", "entry", "problem"),
     hint="The parameters object may carry only the properties this specification version "
     "defines, each with a real value rather than the deprecated JSON null.",
+)
+
+
+# --- The library's walk (this.i 327yhyvd). didwebvh-py reports a refusal as an RFC 9457 problem
+# type; didwebvh.verify.PROBLEMS maps every one of them onto a code below, and a test proves that
+# mapping total against the pinned library rather than against a list kept by hand.
+#
+# Grouped by what the submitter would have to DO, which is why several problem types share a
+# code: "your log does not verify cryptographically" and "your log is structurally wrong" are
+# different jobs, but a broken hash chain and a failed SCID derivation are the same one.
+
+LOG_SIGNATURE_FAILED = ErrorCode(
+    "e.proof.log.signature.f",
+    "A log entry's proof does not verify against the keys authorized to sign it.",
+    detail="The log submitted for {did} was refused: {detail}",
+    args=("did", "detail"),
+    hint="Each entry must be signed by a key in the updateKeys active at that point in the log, "
+    "and under pre-rotation by one committed in the previous entry's nextKeyHashes.",
+)
+
+LOG_WITNESS_FAILED = ErrorCode(
+    "e.proof.log.witness.f",
+    "The witness proofs do not meet the threshold the log requires.",
+    detail="The log submitted for {did} was refused: {detail}",
+    args=("did", "detail"),
+    hint="Every proof must come from a did:key named in the active witness list, and enough of "
+    "them must be present to meet the threshold. A proof from an unlisted witness counts for "
+    "nothing.",
+)
+
+LOG_HASH_FAILED = ErrorCode(
+    "e.proof.log.hash.f",
+    "A hash in the log does not reproduce from the content it covers.",
+    detail="The log submitted for {did} was refused: {detail}",
+    args=("did", "detail"),
+    hint="An entry hash, the SCID derivation or the chain between entries did not recompute. "
+    "This usually means an entry was edited after it was signed.",
+)
+
+LOG_MALFORMED_DEEP = ErrorCode(
+    "e.input.format.log-content.f",
+    "A log entry is structurally invalid in a way only a full read reveals.",
+    detail="The log submitted for {did} was refused: {detail}",
+    args=("did", "detail"),
+    hint="The entry has the required members but their contents are not what the method "
+    "permits -- check the parameters and the DID document in the state member.",
+)
+# Boundary against this package's own e.input.format.log.f, which is the door's refusal of the
+# JSON Lines shape. This one is the library's deeper reading of a log that got past the door.
+
+LOG_DID_MISMATCH = ErrorCode(
+    "e.rule.conformance.did-mismatch.f",
+    "The log resolves to a different DID than the one being published.",
+    detail="The log submitted for {did} was refused: {detail}",
+    args=("did", "detail"),
+    hint="The id in the resolved DID document must be exactly the DID being published. A log "
+    "for another DID is not publishable here even if it verifies perfectly.",
+)
+
+LOG_NOT_PORTABLE = ErrorCode(
+    "e.rule.conformance.portability.f",
+    "The log moves the DID to a new location without having been made portable.",
+    detail="The log submitted for {did} was refused: {detail}",
+    args=("did", "detail"),
+    hint="Portability must be declared at creation. A DID that was not created portable cannot "
+    "later change its domain or path.",
+)
+
+LOG_UNREADABLE = ErrorCode(
+    "e.input.missing.log.f",
+    "The log, or a file it depends on, could not be read.",
+    detail="The log submitted for {did} was refused: {detail}",
+    args=("did", "detail"),
+    hint="If the log names witnesses, the witness proof file must be submitted alongside it.",
+)
+
+RESOLUTION_MISDRIVEN = ErrorCode(
+    "e.self.config.resolver.f",
+    "This service asked the resolver for something it cannot give.",
+    detail="While verifying {did}, the resolver rejected a parameter this service supplied: "
+    "{detail}",
+    args=("did", "detail"),
+    hint="This is a defect in this service, not in the submission. The submitted log may be "
+    "perfectly valid; please report it.",
+)
+
+RESOLUTION_UNMAPPED = ErrorCode(
+    "e.self.unknown.f",
+    "The verifier refused the log for a reason this service does not recognize.",
+    detail="While verifying {did}, the resolver reported {kind}, which this service has no "
+    "handling for.",
+    args=("did", "kind"),
+    hint="This is a gap in this service rather than necessarily a problem with the submission. "
+    "Please report it with the log that produced it.",
 )

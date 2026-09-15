@@ -94,13 +94,14 @@ class TestBoundedReading:
 class TestLogDoor:
     def test_accepts_a_well_shaped_log(self, tmp_path):
         path = write(tmp_path, "did.jsonl", log_bytes(entry(1), entry(2)))
-        entries = bounds.open_log(path, DID)
-        assert len(entries) == 2
-        assert entries[0]["versionId"].startswith("1-")
+        admitted = bounds.open_log(path, DID)
+        assert admitted.raw == path.read_bytes()
+        assert len(admitted.parsed) == 2
+        assert admitted.parsed[0]["versionId"].startswith("1-")
 
     def test_a_log_without_a_trailing_newline_is_fine(self, tmp_path):
         path = write(tmp_path, "did.jsonl", json.dumps(entry()).encode())
-        assert len(bounds.open_log(path, DID)) == 1
+        assert len(bounds.open_log(path, DID).parsed) == 1
 
     @pytest.mark.parametrize(
         ("payload", "because"),
@@ -151,7 +152,7 @@ class TestLogDoor:
     def test_a_single_proof_object_is_as_acceptable_as_a_list(self, tmp_path):
         """Data Integrity permits either, and the spec's own examples use both."""
         path = write(tmp_path, "did.jsonl", log_bytes(entry(proof={"type": "DataIntegrityProof"})))
-        assert bounds.open_log(path, DID)[0]["proof"] == {"type": "DataIntegrityProof"}
+        assert bounds.open_log(path, DID).parsed[0]["proof"] == {"type": "DataIntegrityProof"}
 
     def test_refuses_an_entry_over_the_per_entry_bound(self, tmp_path):
         fat = entry(state={"id": DID.canonical, "padding": "x" * bounds.MAX_ENTRY_BYTES})
@@ -207,13 +208,14 @@ class TestWitnessDoor:
     def test_accepts_the_spec_data_model(self, tmp_path):
         path = write(tmp_path, "did-witness.json", json.dumps([self.proofs(1), self.proofs(2)]).encode())
         found = bounds.open_witness(path, DID)
-        assert len(found) == 2
-        assert found[0]["versionId"].startswith("1-")
+        assert found.raw == path.read_bytes()
+        assert len(found.parsed) == 2
+        assert found.parsed[0]["versionId"].startswith("1-")
 
     def test_accepts_an_empty_array(self, tmp_path):
         """A controller may publish the file before any proofs exist for a new entry."""
         path = write(tmp_path, "did-witness.json", b"[]")
-        assert bounds.open_witness(path, DID) == ()
+        assert bounds.open_witness(path, DID).parsed == ()
 
     @pytest.mark.parametrize(
         ("payload", "because"),
