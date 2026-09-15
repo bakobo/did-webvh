@@ -26,10 +26,12 @@ upstream becomes a failing build here rather than an internal-fault message in p
 from __future__ import annotations
 
 import asyncio
+import json
 from dataclasses import dataclass
 
 from did_webvh.core.file_utils import AsyncTextReadError, read_str
 from did_webvh.core.resolver import DidResolver, HistoryResolver, HistoryVerifier
+from did_webvh.core.state import DocumentState
 
 from didwebvh import errors
 from didwebvh.did import WebvhDid
@@ -69,10 +71,14 @@ class Verified:
         document: the resolved DID document, computed from the verified log.
         metadata: the DID document metadata -- created, updated, deactivated, scid, versionId,
             portable, witness and watchers.
+        update_keys: the multikeys authorized to sign the log's next entry, after the
+            specification's parameter inheritance has been applied across the whole log. The AID
+            binding (this.i k6fiebmm) is a claim about exactly this set.
     """
 
     document: dict
     metadata: dict
+    update_keys: tuple[str, ...]
 
 
 class _Submitted(HistoryResolver):
@@ -126,7 +132,29 @@ def verify(log: bytes, did: WebvhDid, witness: bytes | None = None) -> Verified:
     result = asyncio.run(_resolve(log, did, witness))
     if result.resolution_metadata:
         raise _refusal(result.resolution_metadata, did)
-    return Verified(document=result.document, metadata=result.document_metadata)
+    return Verified(
+        document=result.document,
+        metadata=result.document_metadata,
+        update_keys=_active_update_keys(log),
+    )
+
+
+def _active_update_keys(log: bytes) -> tuple[str, ...]:
+    """Replay an already-verified log to read off the update keys it ends with.
+
+    A second pass, deliberately. `DidResolver` does not surface the final `DocumentState`, and
+    `updateKeys` is inherited across entries rather than restated, so reading the last line's
+    parameters would be wrong whenever the log did not restate them. Re-deriving the inheritance
+    here would be reimplementing `_update_params`, which is exactly what this package does not do.
+
+    This carries no security weight and could not: it runs only after the library has accepted
+    the log, and re-reads the same bytes with the same parser. It is a projection, not a check.
+    """
+    state = None
+    for line in log.decode("utf-8").splitlines():
+        if line.strip():
+            state = DocumentState.load_history_line(json.loads(line), state)
+    return tuple(state.update_keys)
 
 
 async def _resolve(log: bytes, did: WebvhDid, witness: bytes | None):

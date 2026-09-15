@@ -68,8 +68,9 @@ def rebuild(lines: list[dict]) -> bytes:
 
 class TestTheHappyPath:
     def test_a_genuine_single_entry_log_verifies(self):
-        did, log, _ = mint()
+        did, log, key = mint()
         verified = verify.verify(log, did)
+        assert verified.update_keys == (key.multikey,)
         assert verified.document["id"] == did.canonical
         assert verified.metadata["scid"] == did.scid
         assert verified.metadata["versionNumber"] == 1
@@ -172,6 +173,15 @@ class TestRefusals:
         with pytest.raises(BakoboError) as raised:
             verify.verify(log, did)
         assert raised.value.code in {"e.input.missing.log.f", "e.proof.log.witness.f"}
+
+
+class TestActiveUpdateKeys:
+    def test_blank_lines_are_skipped_when_reading_the_update_keys(self):
+        """The doors refuse a log with blank lines, so this projection is only ever handed a
+        clean one -- but it is a separate pass over the bytes and does not get to assume that."""
+        _, log, key = mint(entries=2)
+        padded = log.replace(b"\n", b"\n\n")
+        assert verify._active_update_keys(padded) == (key.multikey,)
 
 
 class TestTheMappingIsTotal:

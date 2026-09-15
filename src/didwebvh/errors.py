@@ -16,7 +16,7 @@ both refuse a malformed identifier need two codes, because a caller prefix-match
 what the module actually declares, having found the registry by type rather than by a hand-kept
 list -- so the sentence is a gate, not decoration.
 
-Codes declared here: 18.
+Codes declared here: 22.
 """
 
 from __future__ import annotations
@@ -24,6 +24,10 @@ from __future__ import annotations
 from bakobo.errors import ErrorCode
 
 __all__ = [
+    "BINDING_AID_UNPROVEN",
+    "BINDING_EVIDENCE_MISSING",
+    "BINDING_EVIDENCE_UNUSED",
+    "BINDING_KEY_MISMATCH",
     "CRYPTOSUITE_FORBIDDEN",
     "DID_INVALID",
     "HASH_FORBIDDEN",
@@ -261,4 +265,49 @@ RESOLUTION_UNMAPPED = ErrorCode(
     args=("did", "kind"),
     hint="This is a gap in this service rather than necessarily a problem with the submission. "
     "Please report it with the log that produced it.",
+)
+
+
+# --- The AID binding (this.i k6fiebmm). The claim being adjudicated is narrow and the codes say
+# so: one key, under one controller, at this moment. Nothing here speaks to whether the did:webs
+# DID is authorized for its host and path -- that is the did:webs method's own rule.
+
+BINDING_EVIDENCE_MISSING = ErrorCode(
+    "e.input.missing.binding-evidence.f",
+    "The document claims a did:webs sibling but no key event log was submitted to prove it.",
+    detail="The document for {did} names {sibling} in alsoKnownAs, so this service requires "
+    "that AID's key event log alongside the DID log.",
+    args=("did", "sibling"),
+    hint="Submit the AID's keri.cesr, or remove the did:webs DID from alsoKnownAs and re-sign. "
+    "An unproven claim is not published here.",
+)
+
+BINDING_EVIDENCE_UNUSED = ErrorCode(
+    "e.rule.binding.unused-evidence.f",
+    "A key event log was submitted for a document that claims no did:webs sibling.",
+    detail="The document for {did} names no did:webs DID in alsoKnownAs, so the submitted key "
+    "event log proves nothing and was not used.",
+    args=("did",),
+    hint="Either the alsoKnownAs entry is missing from the log, or the stream was passed by "
+    "mistake. Refused rather than ignored, so nobody believes a binding was checked.",
+)
+
+BINDING_AID_UNPROVEN = ErrorCode(
+    "e.proof.binding.aid.f",
+    "The claimed did:webs sibling's AID is not proven by the submitted key event log.",
+    detail="For {did}, the sibling {sibling} could not be bound: {problem}.",
+    args=("did", "sibling", "problem"),
+    hint="The stream must verify the AID named in the did:webs DID's final segment, from its "
+    "inception event onward. Every did:webs DID in alsoKnownAs must be proven, not just one.",
+)
+
+BINDING_KEY_MISMATCH = ErrorCode(
+    "e.proof.binding.key.f",
+    "The AID verifies, but its current signing key is not authorized to update this DID log.",
+    detail="For {did}, the AID behind {sibling} verifies, but none of its current signing keys "
+    "appears in the log's active updateKeys.",
+    args=("did", "sibling"),
+    hint="The binding is about control right now, so a key the AID has rotated away from does "
+    "not satisfy it. Rotate the did:webvh updateKeys to the AID's current key, or the AID to "
+    "the update key.",
 )
