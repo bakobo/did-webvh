@@ -219,39 +219,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "didwebvh"
-version = "0.0.0"
-source = { editable = "." }
-dependencies = [
-    { name = "bakobo-errors" },
-    { name = "base58" },
-    { name = "did-webvh" },
-    { name = "idna" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "bakobo-errors", git = "https://github.com/bakobo/errors?rev=45f42ae4259cce144fe1d668c9c176d869c3023a" },
-    { name = "base58", specifier = ">=2.1.0" },
-    { name = "did-webvh", git = "https://github.com/decentralized-identity/didwebvh-py?rev=905f5e1b67db617655d94d25427c965f619cda6c" },
-    { name = "idna", specifier = ">=3.6" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=8" },
-    { name = "pytest-cov", specifier = ">=5" },
-    { name = "ruff" },
-]
-
-[[package]]
 name = "frozenlist"
 version = "1.8.0"
 source = { registry = "https://pypi.org/simple" }
@@ -582,6 +549,39 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/60/0c/1a8a4850f9b24fb8c8ac2f99394d3fb4fd929360ebfd1436e13ecebf5baf/typing_validation-2.2.1.tar.gz", hash = "sha256:db33e27b0269098902677aa23eba07fcd13f076b6ef2ffc1bb341be5c0942c75", size = 61583, upload-time = "2026-07-18T13:25:01.444Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/3f/0c/f44ed22596e22ec9b359d4bb99742ee3380aa433e9e161ff7acb824e5fac/typing_validation-2.2.1-py3-none-any.whl", hash = "sha256:7b6740a98ebd3ba73a542032406807cd4a9620d578b69040a99bd58bdde9da7c", size = 71132, upload-time = "2026-07-18T13:25:00.275Z" },
+]
+
+[[package]]
+name = "webvh-gate"
+version = "0.0.0"
+source = { editable = "." }
+dependencies = [
+    { name = "bakobo-errors" },
+    { name = "base58" },
+    { name = "did-webvh" },
+    { name = "idna" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "bakobo-errors", git = "https://github.com/bakobo/errors?rev=45f42ae4259cce144fe1d668c9c176d869c3023a" },
+    { name = "base58", specifier = ">=2.1.0" },
+    { name = "did-webvh", git = "https://github.com/decentralized-identity/didwebvh-py?rev=905f5e1b67db617655d94d25427c965f619cda6c" },
+    { name = "idna", specifier = ">=3.6" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8" },
+    { name = "pytest-cov", specifier = ">=5" },
+    { name = "ruff" },
 ]
 
 [[package]]

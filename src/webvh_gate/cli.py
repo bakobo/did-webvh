@@ -1,6 +1,6 @@
-"""The ``didwebvh`` command line: one verb, and one operator contract.
+"""The ``webvh-gate`` command line: one verb, and one operator contract.
 
-``didwebvh publish --did <did:webvh:...> --log <did.jsonl> [--witness <did-witness.json>]
+``webvh-gate publish --did <did:webvh:...> --log <did.jsonl> [--witness <did-witness.json>]
 --out <dir>`` runs the whole phase-1 pipeline: bound and shape the submission, clamp what
 ``did:webvh:1.0`` forbids, walk the log with didwebvh-py, refuse a document claiming another
 party's identity, and write the artifacts atomically.
@@ -33,8 +33,8 @@ import sys
 
 from bakobo.errors import BakoboError
 
-from didwebvh import bounds, clamp, errors, publish, verify
-from didwebvh.did import parse as parse_did
+from webvh_gate import bounds, clamp, errors, publish, verify
+from webvh_gate.did import parse as parse_did
 
 __all__ = ["main"]
 
@@ -63,7 +63,7 @@ class _Parser(argparse.ArgumentParser):
 
 
 def _parser() -> _Parser:
-    parser = _Parser(prog="didwebvh", description="Publish did:webvh artifacts.")
+    parser = _Parser(prog="webvh-gate", description="Publish did:webvh artifacts.")
     verbs = parser.add_subparsers(dest="verb", required=True)
     publishing = verbs.add_parser(
         "publish", help="verify a DID log and write did.jsonl, did.json and did-witness.json"

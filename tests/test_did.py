@@ -11,8 +11,8 @@ from __future__ import annotations
 import pytest
 from bakobo.errors import BakoboError
 
-from didwebvh import did as did_module
-from didwebvh.did import WebvhDid, parse
+from webvh_gate import did as did_module
+from webvh_gate.did import WebvhDid, parse
 
 # A conforming SCID: exactly 46 base58btc characters. This one was minted by the pinned
 # didwebvh-py during recon, so it is a real SHA-256 multihash and not a plausible-looking string.

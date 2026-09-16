@@ -29,8 +29,8 @@ import re
 import pytest
 from bakobo.errors import BakoboError
 
-from didwebvh import clamp, publish, verify
-from didwebvh.did import parse
+from webvh_gate import clamp, publish, verify
+from webvh_gate.did import parse
 
 VECTORS = pathlib.Path(__file__).parent / "vectors"
 MANIFEST = json.loads((VECTORS / "MANIFEST.json").read_text())
@@ -233,7 +233,7 @@ class TestPositiveVectors:
 
 
 class TestAdversarialIdentifiers:
-    """The suite's DID-syntax vectors, aimed straight at didwebvh.did.
+    """The suite's DID-syntax vectors, aimed straight at webvh_gate.did.
 
     These are chosen adversarially rather than by us: percent-encoded IPv4 literals in both cases,
     the cloud metadata address reached the same way, path traversal plain and percent-encoded, a

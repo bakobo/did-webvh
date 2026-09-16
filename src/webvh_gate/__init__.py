@@ -1,4 +1,4 @@
-"""didwebvh — publish did:webvh DIDs on Bakobo infrastructure.
+"""webvh_gate — publish did:webvh DIDs on Bakobo infrastructure.
 
 Takes a controller-signed DID log and, where the DID claims a KERI sibling, that AID's key event
 log; verifies both; and hosts ``did.jsonl``, ``did.json`` and ``did-witness.json``. Bakobo holds no

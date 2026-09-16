@@ -12,8 +12,8 @@ import base58
 import pytest
 from bakobo.errors import BakoboError
 
-from didwebvh import clamp
-from didwebvh.did import parse
+from webvh_gate import clamp
+from webvh_gate.did import parse
 
 DID = parse("did:webvh:QmaigaGjpv2GNnN5D2tyd1XZLY8PnRTDtgHYCiV964ooMn:example.com")
 SCID = DID.scid

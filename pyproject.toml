@@ -1,7 +1,7 @@
 [project]
-name = "didwebvh"
+name = "webvh-gate"
 version = "0.0.0"
-description = "Publish did:webvh DIDs on Bakobo infrastructure — a verified log in, hosted artifacts out."
+description = "The Bakobo did:webvh publication gate — a verified log in, hosted artifacts out."
 readme = "README.md"
 requires-python = ">=3.14"
 license = { text = "Apache-2.0" }
@@ -41,7 +41,7 @@ dependencies = [
 ]
 
 [project.scripts]
-didwebvh = "didwebvh.cli:main"
+webvh-gate = "webvh_gate.cli:main"
 
 [dependency-groups]
 dev = [
@@ -59,13 +59,13 @@ build-backend = "hatchling.build"
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/didwebvh"]
+packages = ["src/webvh_gate"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov=didwebvh --cov-branch --cov-report=term-missing --cov-fail-under=100"
+addopts = "--cov=webvh_gate --cov-branch --cov-report=term-missing --cov-fail-under=100"
 
 [tool.coverage.run]
 branch = true
-source = ["didwebvh"]
+source = ["webvh_gate"]
 

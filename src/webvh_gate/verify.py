@@ -1,4 +1,4 @@
-"""didwebvh.verify — driving the library's walk, and owning what it says when it refuses.
+"""webvh_gate.verify — driving the library's walk, and owning what it says when it refuses.
 
 didwebvh-py verifies the hash chain, the entry hashes, the SCID derivation, the Data Integrity
 proofs against the active update keys, pre-rotation, and witness thresholds. This module drives
@@ -33,8 +33,8 @@ from did_webvh.core.file_utils import AsyncTextReadError, read_str
 from did_webvh.core.resolver import DidResolver, HistoryResolver, HistoryVerifier
 from did_webvh.core.state import DocumentState
 
-from didwebvh import errors
-from didwebvh.did import WebvhDid
+from webvh_gate import errors
+from webvh_gate.did import WebvhDid
 
 __all__ = ["PROBLEMS", "Verified", "verify"]
 
@@ -132,7 +132,7 @@ def verify(log: bytes, did: WebvhDid, witness: bytes | None = None) -> Verified:
     """
     if not log.strip():
         # ~2qhs The pinned library hangs forever on an empty log rather than reporting
-        # #missing-log: DidResolver.resolve over read_str("") never returns, with no didwebvh
+        # #missing-log: DidResolver.resolve over read_str("") never returns, with no webvh_gate
         # code involved. bounds.open_log already refuses an empty file, so nothing reaches here
         # through the CLI -- this is the second lock on the same door, because a hang is the one
         # failure mode that cannot be caught downstream.
@@ -168,7 +168,7 @@ def _extend_services(document: dict, did: WebvhDid) -> None:
     ``https://example.com/.well-known/`` -- the directory the log lives in. Every implementation in
     DIF's vector suite records ``https://example.com/``, and the specification agrees: when the
     transformation is used for a DID URL path rather than for the log, the ``.well-known`` segment
-    is dropped. So the base comes from :meth:`~didwebvh.did.WebvhDid.base_url`, which computes that
+    is dropped. So the base comes from :meth:`~webvh_gate.did.WebvhDid.base_url`, which computes that
     directly.
     """
     services = document.setdefault("service", [])

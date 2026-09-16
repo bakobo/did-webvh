@@ -1,4 +1,4 @@
-"""didwebvh.clamp — what ``did:webvh:1.0`` forbids, refused before the library sees it.
+"""webvh_gate.clamp — what ``did:webvh:1.0`` forbids, refused before the library sees it.
 
 The version-policy half of the method: which cryptosuite, which hash algorithm, which `method`
 values, and which parameters may appear. It is *not* a second copy of the walk — hash chains,
@@ -31,8 +31,8 @@ from __future__ import annotations
 
 import base58
 
-from didwebvh import errors
-from didwebvh.did import WebvhDid
+from webvh_gate import errors
+from webvh_gate.did import WebvhDid
 
 __all__ = [
     "ACCEPTABLE_METHODS",
@@ -85,7 +85,7 @@ def clamp(entries: tuple[dict, ...], did: WebvhDid | None = None) -> None:
     """Refuse a DID log that `did:webvh:1.0` does not permit.
 
     Args:
-        entries: the log, shape-checked by :mod:`didwebvh.bounds` but otherwise unexamined.
+        entries: the log, shape-checked by :mod:`webvh_gate.bounds` but otherwise unexamined.
         did: the DID being published, so the SCID can be checked against it. Optional only so
             the rules that do not need it can be exercised alone.
 

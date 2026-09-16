@@ -400,7 +400,7 @@ A KERI AID reaches the mainstream DID ecosystem, on artifacts Bakobo verified = 
     Named for what it is, because the method's name was already taken = decision:
       id: mq5fds2e
       why: >
-        The repo is `webvh-gate` and the package is `webvh_gate`. Both were `did-webvh` and
+        The repo is `webvh-gate` and the package is `webvh_gate`. They were `did-webvh` and
         `didwebvh` until 2026-09-16, and the change is a correction rather than a preference.
 
         `did-webvh` is what DIF calls the PyPI distribution this repo depends on. Naming our repo
@@ -449,7 +449,7 @@ A KERI AID reaches the mainstream DID ecosystem, on artifacts Bakobo verified = 
     One verb, and an operator contract that never publishes a partial DID = decision:
       id: nmhqxs5q
       why: >
-        The command line is `didwebvh publish --did <did:webvh:...> --log <did.jsonl>
+        The command line is `webvh-gate publish --did <did:webvh:...> --log <did.jsonl>
         [--witness <did-witness.json>] --out <dir>`, one verb, mirroring
         didwebs' single-verb surface and
         for the same reason: minting a DID means signing with the controller's update key, and

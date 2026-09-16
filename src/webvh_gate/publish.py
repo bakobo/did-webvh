@@ -1,4 +1,4 @@
-"""didwebvh.publish — writing the artifacts where the DID says they live.
+"""webvh_gate.publish — writing the artifacts where the DID says they live.
 
 Three files, three different relationships to the truth. ``did.jsonl`` is the submitted bytes,
 unchanged, because a Data Integrity proof covers exact bytes and anything re-serialized would
@@ -33,9 +33,9 @@ import tempfile
 from copy import deepcopy
 from pathlib import Path
 
-from didwebvh import errors
-from didwebvh.did import WebvhDid
-from didwebvh.verify import Verified
+from webvh_gate import errors
+from webvh_gate.did import WebvhDid
+from webvh_gate.verify import Verified
 
 __all__ = ["DID_JSON", "DID_JSONL", "DID_WITNESS", "WEBS", "publish", "refuse_foreign_alias", "to_did_web"]
 
@@ -128,7 +128,7 @@ def to_did_web(document: dict, did: WebvhDid) -> dict | None:
     likewise publishes a second identifier only because the controller authorized it.
 
     Follows the specification's steps in order. Step 2 -- adding the implicit services when
-    absent -- has already happened by the time this runs: :func:`didwebvh.verify.verify` puts them
+    absent -- has already happened by the time this runs: :func:`webvh_gate.verify.verify` puts them
     in the resolved document, because that is where every other implementation puts them. What is
     left here is the prefix replacement, the ``alsoKnownAs`` entry, and the deduplication.
     """

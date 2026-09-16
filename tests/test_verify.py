@@ -17,8 +17,8 @@ from did_webvh.askar import AskarSigningKey
 from did_webvh.core.proof import di_jcs_sign
 from did_webvh.core.state import DocumentState
 
-from didwebvh import verify
-from didwebvh.did import parse
+from webvh_gate import verify
+from webvh_gate.did import parse
 
 
 def mint(entries: int = 1, **params):
@@ -276,7 +276,7 @@ class TestTheMappingIsTotal:
         unmapped = self.library_problem_types() - set(verify.PROBLEMS)
         assert not unmapped, (
             "the pinned did_webvh can report problems this package would surface as an internal "
-            f"fault. Add them to didwebvh.verify.PROBLEMS: {sorted(unmapped)}"
+            f"fault. Add them to webvh_gate.verify.PROBLEMS: {sorted(unmapped)}"
         )
 
     def test_no_mapping_is_dead(self):

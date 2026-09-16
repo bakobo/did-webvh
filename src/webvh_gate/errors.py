@@ -1,10 +1,10 @@
-"""The didwebvh error registry.
+"""The webvh_gate error registry.
 
 Every error this package raises is a module-scope :class:`~bakobo.errors.ErrorCode` literal --
 never assembled from variables, f-strings, or a factory (dev/standards/error-codes.md, "The
 registry") -- so a catalog can be extracted by static analysis and an illegal code is refused at
 import time rather than described in prose. Codes classify by *meaning*, never by which module
-raised them: no `didwebvh`-specific component name appears in any code.
+raised them: no `webvh_gate`-specific component name appears in any code.
 
 **Boundaries against did-webs.** The sibling repo publishes a different method over the same
 transport, so several codes here are the near-neighbour of one there and must not reuse its
@@ -80,7 +80,7 @@ WITNESS_TOO_LARGE = ErrorCode(
     "entries; a file near this bound is usually one that never dropped the old ones.",
 )
 
-#: Each door's range code, by kind, so :func:`didwebvh.bounds.read_bounded` can raise the right
+#: Each door's range code, by kind, so :func:`webvh_gate.bounds.read_bounded` can raise the right
 #: one without assembling a code string. The literals above are what a catalog extractor sees;
 #: this only points at them.
 TOO_LARGE = {
@@ -152,7 +152,7 @@ PARAMETER_REFUSED = ErrorCode(
 
 
 # --- The library's walk (this.i 327yhyvd). didwebvh-py reports a refusal as an RFC 9457 problem
-# type; didwebvh.verify.PROBLEMS maps every one of them onto a code below, and a test proves that
+# type; webvh_gate.verify.PROBLEMS maps every one of them onto a code below, and a test proves that
 # mapping total against the pinned library rather than against a list kept by hand.
 #
 # Grouped by what the submitter would have to DO, which is why several problem types share a

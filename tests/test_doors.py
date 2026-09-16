@@ -27,7 +27,7 @@ import pathlib
 
 import pytest
 
-SOURCE = pathlib.Path(__file__).resolve().parent.parent / "src" / "didwebvh"
+SOURCE = pathlib.Path(__file__).resolve().parent.parent / "src" / "webvh_gate"
 
 #: Names whose call or attribute access brings bytes across a boundary.
 PRIMITIVES = {
@@ -128,7 +128,7 @@ def test_the_census_finds_something():
 
 
 def test_every_boundary_read_is_a_door_or_an_argued_exemption():
-    from didwebvh import bounds
+    from webvh_gate import bounds
 
     doors = {f"open_{door.kind}" for door in bounds.DOORS} | {"_read", "read_bounded"}
     stray = [
@@ -229,8 +229,8 @@ def test_publication_refuses_a_foreign_identity_alias():
     the import check by other means."""
     from bakobo.errors import BakoboError
 
-    from didwebvh import publish
-    from didwebvh.did import parse
+    from webvh_gate import publish
+    from webvh_gate.did import parse
 
     did = parse("did:webvh:QmaigaGjpv2GNnN5D2tyd1XZLY8PnRTDtgHYCiV964ooMn:example.com")
     try:

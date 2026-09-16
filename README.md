@@ -2,7 +2,7 @@
 
 # did-webvh
 
-Publish [`did:webvh`](https://github.com/decentralized-identity/didwebvh) DIDs on Bakobo
+Publish [`did:webvh`](https://github.com/decentralized-identity/webvh_gate) DIDs on Bakobo
 infrastructure for customers who already control a [KERI](https://github.com/WebOfTrust/keripy)
 AID. A controller-signed DID log goes in, alongside the AID's key event log; verified artifacts —
 `did.jsonl`, `did.json`, and `did-witness.json` where the log names witnesses — come out. Bakobo

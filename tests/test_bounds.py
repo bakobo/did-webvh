@@ -13,8 +13,8 @@ import json
 import pytest
 from bakobo.errors import BakoboError
 
-from didwebvh import bounds
-from didwebvh.did import parse
+from webvh_gate import bounds
+from webvh_gate.did import parse
 
 DID = parse("did:webvh:QmaigaGjpv2GNnN5D2tyd1XZLY8PnRTDtgHYCiV964ooMn:example.com")
 

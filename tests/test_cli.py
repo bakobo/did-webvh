@@ -15,7 +15,7 @@ from did_webvh.core.proof import di_jcs_sign
 from did_webvh.core.state import DocumentState
 from test_verify import mint, rebuild, relines
 
-from didwebvh import cli
+from webvh_gate import cli
 
 
 def write(tmp_path, name: str, payload: bytes) -> str:
@@ -25,7 +25,7 @@ def write(tmp_path, name: str, payload: bytes) -> str:
 
 
 def invoke(tmp_path, *, log: bytes, did=None, witness=None, out=None):
-    """Run `didwebvh publish`, returning its exit status."""
+    """Run `webvh-gate publish`, returning its exit status."""
     argv = ["publish", "--log", write(tmp_path, "did.jsonl", log)]
     argv += ["--did", did]
     argv += ["--out", str(out if out is not None else tmp_path / "www")]

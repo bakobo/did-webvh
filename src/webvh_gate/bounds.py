@@ -1,4 +1,4 @@
-"""didwebvh.bounds — the three doors everything crosses through.
+"""webvh_gate.bounds — the three doors everything crosses through.
 
 Every byte this process reads from outside arrives through one of the openers here, and is
 bounded before it is parsed (this.i constraint 43ukbqca; dev/standards/input-handling.md). Size
@@ -25,8 +25,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import BinaryIO
 
-from didwebvh import errors
-from didwebvh.did import WebvhDid
+from webvh_gate import errors
+from webvh_gate.did import WebvhDid
 
 __all__ = [
     "DOORS",

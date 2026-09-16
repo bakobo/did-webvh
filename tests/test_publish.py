@@ -13,9 +13,9 @@ import json
 import pytest
 from bakobo.errors import BakoboError
 
-from didwebvh import publish
-from didwebvh.did import parse
-from didwebvh.verify import Verified
+from webvh_gate import publish
+from webvh_gate.did import parse
+from webvh_gate.verify import Verified
 
 SCID = "QmaigaGjpv2GNnN5D2tyd1XZLY8PnRTDtgHYCiV964ooMn"
 DID = parse(f"did:webvh:{SCID}:example.com")

@@ -14,7 +14,7 @@ import re
 import pytest
 from bakobo.errors import ErrorCode
 
-from didwebvh import errors
+from webvh_gate import errors
 
 SOURCE = pathlib.Path(errors.__file__)
 
@@ -112,7 +112,7 @@ class TestIdentity:
     def test_no_component_name_appears_in_any_code(self):
         """Codes classify by what the obstacle was, never by which module raised it."""
         for name, code in registry().items():
-            assert "didwebvh" not in code.code.replace("did-webvh", ""), name
+            assert "webvh_gate" not in code.code.replace("did-webvh", ""), name
 
 
 class TestEveryCodeIsDeclaredAsALiteral:

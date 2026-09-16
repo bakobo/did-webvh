@@ -1,4 +1,4 @@
-"""didwebvh.did — the ``WebvhDid`` value type.
+"""webvh_gate.did — the ``WebvhDid`` value type.
 
 Parses ``did:webvh`` identifiers against the v1.0 spec's ``### Method-Specific Identifier`` ABNF
 and derives the HTTPS locations defined in ``### The DID to HTTPS Transformation``. Pure value
@@ -30,7 +30,7 @@ from urllib.parse import quote, unquote
 
 import idna
 
-from didwebvh.errors import DID_INVALID
+from webvh_gate.errors import DID_INVALID
 
 __all__ = ["WebvhDid", "parse"]
 
@@ -220,7 +220,7 @@ def parse(raw: str) -> WebvhDid:
         The parsed, normalized DID.
 
     Raises:
-        bakobo.errors.BakoboError: carrying :data:`~didwebvh.errors.DID_INVALID`, for every way a
+        bakobo.errors.BakoboError: carrying :data:`~webvh_gate.errors.DID_INVALID`, for every way a
             string can fail to be a ``did:webvh`` DID. One code, deliberately: an operator acts on
             "this is not a valid identifier", and the specific rule is in the message.
     """
