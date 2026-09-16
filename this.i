@@ -397,6 +397,33 @@ A KERI AID reaches the mainstream DID ecosystem, on artifacts Bakobo verified = 
         not a valid identifier" and reads which rule failed in the message; a code per ABNF
         production would be a vocabulary nobody branches on.
 
+    Named for what it is, because the method's name was already taken = decision:
+      id: mq5fds2e
+      why: >
+        The repo is `webvh-gate` and the package is `webvh_gate`. Both were `did-webvh` and
+        `didwebvh` until 2026-09-16, and the change is a correction rather than a preference.
+
+        `did-webvh` is what DIF calls the PyPI distribution this repo depends on. Naming our repo
+        the same thing made our own manifest read as a self-reference —
+        `"did-webvh @ git+https://github.com/decentralized-identity/didwebvh-py@905f5e1"` — and
+        put `from did_webvh.core.state import ...` one line above `from didwebvh.did import ...`
+        in verify.py, two identifiers differing by an underscore doing entirely different jobs.
+        Daniel could not tell `bakobo/did-webvh` from `bakobo/didwebvh-py` in his own org, which
+        is a name failing at its only task.
+
+        `webvh-gate` says what this is — the publication gate — rather than which method it
+        speaks, so it cannot collide with anything the method's ecosystem publishes. Rejected
+        keeping the name and relying on the hyphen and the underscore to carry the distinction,
+        which is what had already failed. Rejected renaming the fork instead: a fork conventionally
+        keeps its upstream's name, and that is how its relationship stays legible.
+
+        The CLI verb moves with it, `didwebvh publish` becoming `webvh-gate publish`, which is a
+        change to an external contract (@nmhqxs5q). Nothing is published yet and there is no
+        installed base, so the cost is zero now and would not have been later. Error codes do NOT
+        move: `e.input.format.did-webvh.f` names the *method* whose syntax was violated, which is
+        still did:webvh, and codes classify by obstacle rather than by the component that raised
+        them.
+
     Publish first; resolving and serving come later = decision:
       id: cx2fyuyz
       why: >
