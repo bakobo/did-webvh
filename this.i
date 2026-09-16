@@ -5,7 +5,7 @@
 # Node key line:  Name = [marks...] type:   (types: goal | decision | constraint | tension | deviation)
 # id: opaque base32 [a-z2-7]{8}, never a semantic label.  why: meets the rebuttal-surface standard.
 
-A KERI AID reaches the mainstream DID ecosystem, on a binding Bakobo verified = goal:
+A KERI AID reaches the mainstream DID ecosystem, on artifacts Bakobo verified = goal:
   id: b2ag3wmp
   why: >
     did-webvh exists so a Bakobo customer holding a KERI AID is also resolvable by the DID
@@ -15,11 +15,17 @@ A KERI AID reaches the mainstream DID ecosystem, on a binding Bakobo verified = 
     its row in the DIF status matrix reads "No", it stalled after Deep Dive 1, and its proposal
     was last touched 2025-09-24. Rejected treating did:webvh as a replacement for did:webs:
     webvh's trust rests on a self-contained log the controller signs, with no key-event history
-    behind it, so it buys reach and not root of trust. Rejected equally a webvh product with no
-    KERI content, which would make Bakobo one more webvh host competing on price. The outcome
-    this repo produces is one principal with two DIDs, where the binding between them is
-    something Bakobo verified rather than something Bakobo repeated. Accepted tradeoff: this repo
-    tracks two moving specifications and two dependency stacks that share no cryptography.
+    behind it, so it buys reach and not root of trust.
+
+    AMENDED 2026-09-15. This goal used to end by promising "one principal with two DIDs, where
+    the binding between them is something Bakobo verified rather than something Bakobo repeated",
+    and to reject "a webvh product with no KERI content" as competing on price. That promise was
+    not deliverable and the rejection has been overtaken — see @plhyphrk. What the
+    repo delivers is narrower and still worth having: a customer's DID is published only if it
+    verifies and only if it conforms to the version it declares, which is more than a generic
+    host offers and is observable in the artifact rather than in our process. Accepted tradeoff:
+    without the binding, what distinguishes this from any other did:webvh publisher is the
+    conformance clamp alone (@tvv6dvyn), so that clamp had better be right.
   children:
 
     Its own repo, not a second method inside did-webs = decision:
@@ -266,18 +272,60 @@ A KERI AID reaches the mainstream DID ecosystem, on a binding Bakobo verified = 
 
     The AID binding is verified from submitted evidence = decision:
       id: k6fiebmm
+      stage-status: superseded
       why: >
-        A customer's did:webvh document names their did:webs DID in alsoKnownAs. Bakobo refuses
-        to publish such a log unless the submission also carries the AID's keri.cesr and the
-        log's active updateKeys decodes to the same Ed25519 public key as that AID's current
-        signing key — the claim is verified at the gate, not repeated. Rejected hosting the
-        alsoKnownAs as unverified controller-signed content, which is what every other webvh host
-        does and precisely what did-webs exists to refuse; it would leave the root goal
-        (@b2ag3wmp) asserting a binding the product never checks. Rejected resolving the named
-        sibling over the network instead, which would make publication depend on a third party
-        being reachable and would put network I/O into a pipeline deliberately free of it.
-        Accepted tradeoff: a keripy dependency in a repo whose own method has no KERI content,
-        and a customer obligation to assemble two artifacts rather than one.
+        SUPERSEDED 2026-09-15 by @plhyphrk, which declines the feature outright. Kept
+        rather than deleted because the reasoning that produced it is the reasoning a later reader
+        is most likely to repeat.
+
+        It decided that a did:webvh document naming a did:webs DID in alsoKnownAs would be
+        published only if the submission also carried the AID's keri.cesr and the log's active
+        updateKeys decoded to that AID's current signing key. The implementation of that was
+        broken -- updateKeys is a unilateral declaration by the log's own controller, requiring no
+        consent and no signature from the named key, so an attacker could list a victim's public
+        key and submit the victim's public KEL to get a certified false linkage. But the deeper
+        problem is not the bug: even done correctly, the check is invisible. There is nowhere in a
+        did:webvh artifact to record that a host verified anything, so no relying party could ever
+        see the difference.
+
+    We decline to build a verified cross-identity link = decision:
+      id: plhyphrk
+      why: >
+        This repo will not verify, and will not publish, a claim that a did:webvh DID and some
+        other party's identity are the same subject. Neither specification defines such a link,
+        and that is not an oversight in either of them.
+
+        did:webvh does not restrict alsoKnownAs, but every use of it in the v1.0 specification is
+        the same DID in another form -- the prior DID string after a portability move
+        (specification.md:996) and the parallel did:web (1341-1357). It makes no claim about
+        cross-identity linkage and its security section does not discuss one, because the method
+        does not offer one. did:webs does restrict it, to DIDs carrying the same AID, and that
+        constraint is a safety property rather than a limitation: an alias that must carry the AID
+        is self-certifying, so one controller cannot name another party at all (see @4exdkcto).
+
+        Rejected a possession proof -- requiring the latest log entry to be signed by the AID's
+        current key. It is sound and forgery-resistant, but it puts a cross-stack obligation on
+        the customer (a KERI-held key producing an eddsa-jcs-2022 Data Integrity proof) that
+        standard KERI tooling may not expose, and it buys a guarantee no relying party can see.
+        Rejected an AID-side attestation via a designated-aliases ACDC naming the did:webvh DID:
+        expressible, since the ACDC's `ids` is an unconstrained string array, but no conforming
+        did:webs resolver would surface it, so Bakobo would be defining the semantics alone while
+        implying a standard blessed them -- and it would drag ACDC and TEL verification into a
+        repo whose method has no KERI content.
+
+        What replaces it is a hosting stance, not a feature: a document whose alsoKnownAs names a
+        did:webs DID is refused rather than republished. The sibling already does this
+        (did-webs/src/didwebs/document.py:305 drops an alias it cannot check, because "publishing
+        an unverifiable alias under Bakobo's domain would fail open"), and the reasoning transfers
+        exactly. This is a policy about what Bakobo's infrastructure will carry and should be read
+        as one; the method permits such an alias, and we decline it.
+
+        Accepted tradeoff, and it is the expensive one: this removes what distinguished the repo
+        from a generic did:webvh publisher, and it removes keripy from the dependency set
+        entirely. Deliberately NOT closed off: if Bakobo ever ships a resolver, it can surface a
+        verified linkage to its own users as clearly-labelled Bakobo metadata, because there the
+        answer has somewhere to go. The guard tests lock "this repo does not do this", never
+        "Bakobo must never do this".
       tensions:
 
         The binding can only be proven in one direction = tension:
@@ -293,12 +341,28 @@ A KERI AID reaches the mainstream DID ecosystem, on a binding Bakobo verified = 
             surface it even if the controller placed it in the designated-aliases ACDC's free
             `ids` list.
           resolution: >
-            Phase 1 verifies the direction that is expressible, and verifies it on the strongest
-            available evidence: key identity against the KEL, which is a stronger statement than
-            an alias list would have been, because it is about control rather than about naming.
-            The missing direction is an upstream gap in the did:webs method, not a defect here;
-            it goes on did-webs' soft-spots list for the ToIP task force. Revisit if the
-            designated-aliases table gains a row for foreign DIDs.
+            WITHDRAWN 2026-09-15 and re-resolved by @4exdkcto. The original resolution
+            called the missing direction "an upstream gap in the did:webs method" and put it on
+            that repo's soft-spots list for the ToIP task force. That recommendation was wrong and
+            must not be acted on.
+
+    did:webs' same-AID constraint is a safety property, not a gap = tension:
+      id: 4exdkcto
+      nature: >
+        The goal wanted a verifiable link between a customer's did:webvh DID and their KERI AID;
+        did:webs' alsoKnownAs rules permit no such link, and @sqlp567q resolved that conflict by
+        calling the rules deficient and proposing ToIP widen them. New evidence: on 2026-09-15 this repo built exactly the link
+        that widening would permit, and it was exploitable. Because did:webs requires an alias to
+        carry the same AID, and an AID is a hash of its own inception event, a did:webs alias is
+        self-certifying and no controller can name another party. The expressiveness the earlier
+        resolution wanted is precisely the expressiveness that makes an unauthenticated
+        cross-identity claim possible.
+      resolution: >
+        The recommendation is withdrawn. Nobody should raise the same-AID constraint with the ToIP
+        task force as a gap; doing so would propose introducing into did:webs the defect this repo
+        just removed from itself. The tension between "the goal wants a mutual binding" and "the
+        specifications permit only half of one" is resolved in the specifications' favour: they
+        are right and the goal was wrong, which is why @b2ag3wmp no longer asks for it.
 
     The identifier is a value type, and the worked example outranks the ABNF = decision:
       id: x7ad5zds
@@ -346,11 +410,20 @@ A KERI AID reaches the mainstream DID ecosystem, on a binding Bakobo verified = 
         conformance suite has to carry the weight a second independent implementation normally
         would.
 
+        DISCHARGED 2026-09-15. That last sentence was a promise with nothing behind it until an
+        adversarial review (ARC-F1) pointed out that every test minted and verified through the
+        same library -- a closed round-trip that would keep passing while our canonicalization
+        drifted away from everyone else. tests/test_conformance.py now runs DIF's pinned vectors,
+        which carry per-implementation artifacts from Rust, TypeScript, Java and Dart. It found
+        three real defects on its first run: a clamp that refused the specification's own "no
+        witnesses" value, a resolved document missing the implicit services every other
+        implementation emits, and an upstream crash on a mismatched did:key (tick ~7iu4).
+
     One verb, and an operator contract that never publishes a partial DID = decision:
       id: nmhqxs5q
       why: >
         The command line is `didwebvh publish --did <did:webvh:...> --log <did.jsonl>
-        [--witness <did-witness.json>] [--stream <keri.cesr>] --out <dir>`, one verb, mirroring
+        [--witness <did-witness.json>] --out <dir>`, one verb, mirroring
         didwebs' single-verb surface and
         for the same reason: minting a DID means signing with the controller's update key, and
         under @7ca6mlrg that is not a thing an operator can be asked to run against a customer's
@@ -362,13 +435,12 @@ A KERI AID reaches the mainstream DID ecosystem, on a binding Bakobo verified = 
         sign (@7ca6mlrg) is still Bakobo's job, and did.json joins them only when the log commits
         to a parallel did:web (@whgskdbb).
 
-        Both evidence arguments are optional at the command line and mandatory whenever the
-        submission asks for them: `--witness` when the log names witnesses, `--stream` when the
-        document claims a did:webs sibling (@k6fiebmm). Making them unconditionally required
-        would force an operator to invent an empty file for a DID that has neither, and making
-        them ignorable would let a missing one pass as "nothing to check". Supplying either
-        without the corresponding claim is refused rather than ignored, for the same reason: an
-        operator who passed a file believed it was doing something. Rejected a separate verify verb that prints a
+        `--witness` is optional at the command line and mandatory when the log names witnesses.
+        Requiring it unconditionally would force an operator to invent an empty file for a DID
+        that has none; making it ignorable would let a missing one pass as "nothing to check".
+        Supplying it without the corresponding claim is refused rather than ignored, because an
+        operator who passed a file believed it was doing something. `--stream` was removed on
+        2026-09-15 with the AID binding (@plhyphrk). Rejected a separate verify verb that prints a
         verdict without publishing: it would create a second, weaker notion of "verified" that
         could drift from the one the gate enforces. Accepted tradeoff: an operator who wants to
         check a submission without hosting it must publish to a throwaway directory.

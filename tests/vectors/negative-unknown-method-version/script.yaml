@@ -1,0 +1,31 @@
+description: "Log entry whose parameters.method is not a registered did:webvh version"
+spec_ref: "https://identity.foundation/didwebvh/v1.0/#parameters"
+negative: true
+
+keys:
+  - id: key-0
+    type: ed25519
+    seed: "0000000000000000000000000000000000000000000000000000000000000001"
+
+steps:
+  - op: create
+    domain: example.com
+    signer: key-0
+    timestamp: "2000-01-01T00:00:00Z"
+    params:
+      updateKeys: ["key-0"]
+
+  # Replace parameters.method with a value that does not match any
+  # registered did:webvh version, then re-sign. A vulnerable resolver
+  # silently maps the unknown string to its LATEST_VERSION (or to v1.0)
+  # rather than rejecting — opening a downgrade vector once future
+  # versions introduce breaking changes.
+  - op: corrupt
+    entry: 0
+    when: before-sign
+    mutation: replace-parameter
+    field: method
+    value: "did:webvh:99.0"
+
+  - op: resolve
+    expectError: invalidDid

@@ -1,0 +1,16 @@
+description: "DID URL with percent-encoded `..` path segment"
+spec_ref: "https://identity.foundation/didwebvh/v1.0/#did-method-specific-identifier"
+negative: true
+
+steps:
+  - op: resolve-did
+    did: "did:webvh:Qm0000000000000000000000000000000000000000000000:example.com:%2E%2E:admin"
+    expectError: invalidDid
+
+  - op: resolve-did
+    did: "did:webvh:Qm0000000000000000000000000000000000000000000000:example.com:%2e%2e:admin"
+    expectError: invalidDid
+
+  - op: resolve-did
+    did: "did:webvh:Qm0000000000000000000000000000000000000000000000:example.com:a%2Fb"
+    expectError: invalidDid

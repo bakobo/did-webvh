@@ -1,0 +1,8 @@
+description: "DID URL containing literal `..` path segments — must be rejected at parse"
+spec_ref: "https://identity.foundation/didwebvh/v1.0/#did-method-specific-identifier"
+negative: true
+
+steps:
+  - op: resolve-did
+    did: "did:webvh:Qm0000000000000000000000000000000000000000000000:example.com:..:..:admin"
+    expectError: invalidDid

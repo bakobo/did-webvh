@@ -176,9 +176,14 @@ class TestTheFamilies:
         assert len(conformance) >= 4
         assert all(c.startswith("e.rule.conformance.") for c in conformance)
 
-    def test_binding_refusals_are_findable(self):
-        binding = {c.code for c in registry().values() if "binding" in c.code}
-        assert len(binding) >= 3
+    def test_the_hosting_stance_has_its_own_family(self):
+        """e.rule.hosting.* is deliberately separate from e.rule.conformance.*: one says the
+        submission breaks the method, the other says the method is fine and we decline anyway.
+        An operator scripting on the difference should not have to read the sentence."""
+        hosting = {c.code for c in registry().values() if c.code.startswith("e.rule.hosting.")}
+        assert hosting
+        conformance = {c.code for c in registry().values() if "conformance" in c.code}
+        assert not (hosting & conformance)
 
     def test_everything_is_final_rather_than_retryable(self):
         """Phase 1 has no transient failures: every refusal is about the submission, and the

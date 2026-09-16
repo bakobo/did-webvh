@@ -12,8 +12,11 @@ One thing here is not in the [DIF reference implementation](https://github.com/d
 this depends on: the publication gate refuses log entries that the `did:webvh:1.0` method version
 forbids, including when the reference implementation is what produced them.
 
-A second was intended -- proving that a DID claiming a `did:webs` sibling really is under that AID's
-key, rather than republishing an `alsoKnownAs` entry on faith -- and does not yet work. See Status.
+It also declines to publish a document whose `alsoKnownAs` names a `did:webs` DID. That is a
+hosting policy rather than a rule of the method: no specification makes such a claim verifiable,
+and a `did:webvh` artifact has nowhere to record that a host tried, so republishing one would put
+an unchecked assertion about a third party under your domain over ours. Another host may publish
+it; we would rather say why we don't.
 
 ## Status
 
@@ -23,12 +26,12 @@ artifacts atomically or not at all. 498 tests, 100% branch coverage.
 
 Not yet: resolving, HTTP serving, minting, or anything network-facing.
 
-**The `did:webs` binding described above does not yet do what it says.** An adversarial review on
-2026-09-15 established that it accepts a claimed sibling when the AID's *public* key merely appears
-in the log's `updateKeys` -- a value the log's own controller sets, requiring no consent and no
-signature from the AID. It is being reworked to require evidence from the AID itself. Until then,
-treat a published `alsoKnownAs` here as a controller's assertion, exactly as you would from any
-other host.
+This repo briefly claimed to verify that a `did:webvh` DID and a KERI AID were under one key. An
+adversarial review on 2026-09-15 showed the check was satisfiable with the victim's *public* key
+alone, and the subsequent question -- whether any correct version would be worth having -- answered
+itself: there is nowhere in a `did:webvh` artifact to record that a host verified anything, so the
+guarantee would have been invisible to everyone who reads the document. The feature was withdrawn
+rather than repaired. `this.i` node `plhyphrk` has the reasoning.
 
 `this.i` is plain YAML and its `why` fields are prose. It is the fastest way to see why this repo
 exists beside [`bakobo/did-webs`](https://github.com/bakobo/did-webs), which implements the other

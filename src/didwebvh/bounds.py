@@ -5,6 +5,9 @@ bounded before it is parsed (this.i constraint 43ukbqca; dev/standards/input-han
 first, then shape, then meaning: the clamp, the library's walk and the AID binding are all
 judgments about what bytes *mean*, and none of them starts if the submission is simply too large.
 
+**Two doors, not three.** A third admitted the KERI event stream behind the AID binding; it left
+with that binding on 2026-09-15 (this.i plhyphrk). A door nothing enters by is a door that rots.
+
 **The doors decide how many and what shape, never what it means.** :func:`open_log` will accept a
 log whose proofs are forged and whose hashes are wrong, so long as it is JSON Lines of objects
 carrying the five required members. That is deliberate: a door that also judged meaning would be
@@ -30,12 +33,10 @@ __all__ = [
     "LOG",
     "MAX_ENTRIES",
     "MAX_ENTRY_BYTES",
-    "STREAM",
     "WITNESS",
     "Admitted",
     "Door",
     "open_log",
-    "open_stream",
     "open_witness",
     "read_bounded",
 ]
@@ -86,7 +87,7 @@ WITNESS = Door("witness", 4 * _MIB)
 
 #: Every door. The census test and the completeness tests both read this rather than a list kept
 #: by hand, so adding a door is one edit and forgetting to register one is a failure.
-DOORS = (LOG, STREAM, WITNESS)
+DOORS = (LOG, WITNESS)
 
 #: The most bytes one log entry may occupy. A whole DID document is a few kilobytes; this is three
 #: orders of magnitude above that, and stops one entry consuming the entire file bound.
@@ -199,22 +200,6 @@ def _entry(line: bytes, number: int, did: WebvhDid) -> dict:
                 did=did.canonical, line=number, problem=f"{member} is the wrong JSON type"
             )
     return entry
-
-
-def open_stream(path: Path | str, did: WebvhDid) -> bytes:
-    """Admit a KERI event stream, bounding it and nothing else.
-
-    What the bytes mean is keripy's judgment, made later against the AID's key state. This door
-    exists so that judgment is reached with a bounded amount of memory in hand.
-
-    Raises:
-        bakobo.errors.BakoboError: ``e.input.range.stream.f`` past the bound, or
-            ``e.input.missing.stream.f`` when the stream is empty.
-    """
-    payload = _read(path, STREAM, did)
-    if not payload:
-        raise errors.STREAM_EMPTY(did=did.canonical)
-    return payload
 
 
 def open_witness(path: Path | str, did: WebvhDid) -> Admitted:

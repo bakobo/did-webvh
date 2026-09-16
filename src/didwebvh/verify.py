@@ -38,6 +38,14 @@ from didwebvh.did import WebvhDid
 
 __all__ = ["PROBLEMS", "Verified", "verify"]
 
+#: The implicit services every did:webvh DID has, whether or not its log lists them. The
+#: specification defines them for any did:webvh DID, and DIF's cross-implementation vectors show
+#: the Rust, TypeScript, Java and Dart resolvers all placing them in the resolved document. They
+#: are added here for that reason: a Verified.document that lacked them would not be the document
+#: anyone else resolves to.
+_FILES = "relativeRef"
+_WHOIS = "LinkedVerifiablePresentation"
+
 #: Every problem type the pinned library can report, and the Bakobo code it becomes. Grouped by
 #: what the submitter would have to *do*, which is what an error code is for -- several upstream
 #: types share a code because they share a remedy.
@@ -129,14 +137,55 @@ def verify(log: bytes, did: WebvhDid, witness: bytes | None = None) -> Verified:
         # through the CLI -- this is the second lock on the same door, because a hang is the one
         # failure mode that cannot be caught downstream.
         raise errors.LOG_UNREADABLE(did=did.canonical, detail="the log is empty")
-    result = asyncio.run(_resolve(log, did, witness))
+    try:
+        result = asyncio.run(_resolve(log, did, witness))
+    except (ValueError, AttributeError, TypeError, KeyError) as fault:
+        # The library's documented failure path is a ResolutionError carrying ProblemDetails.
+        # It also has paths that raise plain exceptions -- core/proof.py's resolve_did_key does,
+        # for a did:key whose body and fragment disagree, and state.py calls it outside the
+        # except-ValueError that would have caught it (tick ~7iu4). Those refusals are real and
+        # are about the submission, so they must not surface as a service fault telling a
+        # customer their valid log broke us. Narrow on purpose: an unexpected exception type
+        # still reaches cli.py's catch-all and is still reported as ours.
+        raise errors.LOG_UNDIAGNOSED(
+            did=did.canonical, fault=f"{type(fault).__name__}: {fault}"
+        ) from fault
     if result.resolution_metadata:
         raise _refusal(result.resolution_metadata, did)
+    _extend_services(result.document, did)
     return Verified(
         document=result.document,
         metadata=result.document_metadata,
         update_keys=_active_update_keys(log),
     )
+
+
+def _extend_services(document: dict, did: WebvhDid) -> None:
+    """Add whichever implicit service the resolved document lacks, leaving any other alone.
+
+    Not `did_webvh.resolver.extend_document_services`, deliberately. That helper derives the base
+    by trimming the final path segment off a URL, which for a DID with no path segments yields
+    ``https://example.com/.well-known/`` -- the directory the log lives in. Every implementation in
+    DIF's vector suite records ``https://example.com/``, and the specification agrees: when the
+    transformation is used for a DID URL path rather than for the log, the ``.well-known`` segment
+    is dropped. So the base comes from :meth:`~didwebvh.did.WebvhDid.base_url`, which computes that
+    directly.
+    """
+    services = document.setdefault("service", [])
+    present = {service.get("type") for service in services if isinstance(service, dict)}
+    if _FILES not in present:
+        services.append(
+            {"id": f"{did.canonical}#files", "type": _FILES, "serviceEndpoint": did.base_url()}
+        )
+    if _WHOIS not in present:
+        services.append(
+            {
+                "@context": "https://identity.foundation/linked-vp/contexts/v1",
+                "id": f"{did.canonical}#whois",
+                "type": _WHOIS,
+                "serviceEndpoint": f"{did.base_url()}whois.vp",
+            }
+        )
 
 
 def _active_update_keys(log: bytes) -> tuple[str, ...]:

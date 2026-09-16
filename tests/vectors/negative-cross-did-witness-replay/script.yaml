@@ -1,0 +1,38 @@
+description: "Witness proof signed over a stale versionId — must be rejected"
+spec_ref: "https://identity.foundation/didwebvh/v1.0/#witnesses"
+negative: true
+
+keys:
+  - id: key-0
+    type: ed25519
+    seed: "0000000000000000000000000000000000000000000000000000000000000001"
+  - id: witness-key
+    type: ed25519
+    seed: "0000000000000000000000000000000000000000000000000000000000000010"
+
+steps:
+  - op: create
+    domain: example.com
+    signer: key-0
+    timestamp: "2000-01-01T00:00:00Z"
+    params:
+      updateKeys: ["key-0"]
+      witness:
+        threshold: 1
+        witnesses:
+          - id: witness-key
+
+  - op: update
+    signer: key-0
+    timestamp: "2000-01-02T00:00:00Z"
+
+  # The witness signs entry 0's versionId — a genuine, valid signature —
+  # but it is presented as the sole witness proof for DID resolution.
+  # A conforming resolver must reject this because the signed versionId
+  # does not match the current HEAD (entry 1's versionId).
+  - op: sign-witness-proof
+    signer: witness-key
+    entry: 0
+
+  - op: resolve
+    expectError: invalidDid

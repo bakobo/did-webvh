@@ -1,0 +1,19 @@
+description: "DID URL whose host is a percent-encoded IPv4 literal — must be rejected"
+spec_ref: "https://identity.foundation/didwebvh/v1.0/#did-method-specific-identifier"
+negative: true
+
+steps:
+  - op: resolve-did
+    did: "did:webvh:Qm0000000000000000000000000000000000000000000000:127%2E0%2E0%2E1"
+    expectError: invalidDid
+
+  # Lowercase percent-encoding form must be rejected too (RFC 3986 §2.1
+  # mandates case-insensitive percent-encoding).
+  - op: resolve-did
+    did: "did:webvh:Qm0000000000000000000000000000000000000000000000:127%2e0%2e0%2e1"
+    expectError: invalidDid
+
+  # Cloud metadata endpoint via the same trick.
+  - op: resolve-did
+    did: "did:webvh:Qm0000000000000000000000000000000000000000000000:169%2E254%2E169%2E254"
+    expectError: invalidDid

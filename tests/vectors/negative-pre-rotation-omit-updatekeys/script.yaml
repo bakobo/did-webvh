@@ -1,0 +1,42 @@
+description: "Pre-rotation bypass via omitted updateKeys on the consuming entry"
+spec_ref: "https://identity.foundation/didwebvh/v1.0/#pre-rotation"
+negative: true
+
+keys:
+  - id: key-0
+    type: ed25519
+    seed: "0000000000000000000000000000000000000000000000000000000000000001"
+  - id: key-1
+    type: ed25519
+    seed: "0000000000000000000000000000000000000000000000000000000000000002"
+
+steps:
+  # Genesis commits to key-1 as the next authorized update key.
+  - op: create
+    domain: example.com
+    signer: key-0
+    timestamp: "2000-01-01T00:00:00Z"
+    params:
+      updateKeys: ["key-0"]
+      nextKeyHashes: ["key-1"]
+
+  # The second entry should present `updateKeys: ["key-1"]` so the resolver
+  # can verify it hashes into the previous nextKeyHashes commitment. Instead
+  # it OMITS updateKeys entirely, signs with the OLD key (key-0), and a
+  # vulnerable resolver inherits previous.active_update_keys unchanged —
+  # validating the old (possibly compromised) key against a commitment it
+  # was never named in.
+  - op: update
+    signer: key-0     # signed with the OLD key, not the pre-rotated one
+    timestamp: "2000-01-02T00:00:00Z"
+    params:
+      # updateKeys deliberately omitted
+
+  - op: corrupt
+    entry: 1
+    when: before-sign
+    mutation: drop-parameter
+    value: "updateKeys"
+
+  - op: resolve
+    expectError: invalidParameters

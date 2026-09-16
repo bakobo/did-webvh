@@ -55,8 +55,8 @@ class TestTheDoorSet:
         kinds = [d.kind for d in bounds.DOORS]
         assert len(kinds) == len(set(kinds))
 
-    def test_there_is_a_door_for_each_of_the_three_submitted_artifacts(self):
-        assert {d.kind for d in bounds.DOORS} == {"log", "stream", "witness"}
+    def test_there_is_a_door_for_each_submitted_artifact(self):
+        assert {d.kind for d in bounds.DOORS} == {"log", "witness"}
 
     def test_every_door_has_an_opener_named_after_it(self):
         for door in bounds.DOORS:
@@ -175,27 +175,6 @@ class TestLogDoor:
         with pytest.raises(BakoboError) as raised:
             bounds.open_log(path, DID)
         assert raised.value.code == "e.input.range.log.f"
-
-
-class TestStreamDoor:
-    def test_returns_the_bytes_unexamined(self, tmp_path):
-        """CESR's meaning is keripy's to judge; this door only decides how many bytes."""
-        payload = b"-FABE" + b"x" * 100
-        path = write(tmp_path, "keri.cesr", payload)
-        assert bounds.open_stream(path, DID) == payload
-
-    def test_refuses_an_empty_stream(self, tmp_path):
-        path = write(tmp_path, "keri.cesr", b"")
-        with pytest.raises(BakoboError) as raised:
-            bounds.open_stream(path, DID)
-        assert raised.value.code == "e.input.missing.stream.f"
-
-    def test_refuses_a_stream_over_the_bound(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(bounds, "STREAM", bounds.Door("stream", 8))
-        path = write(tmp_path, "keri.cesr", b"x" * 9)
-        with pytest.raises(BakoboError) as raised:
-            bounds.open_stream(path, DID)
-        assert raised.value.code == "e.input.range.stream.f"
 
 
 class TestWitnessDoor:

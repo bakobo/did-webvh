@@ -142,9 +142,21 @@ def _parameters(parameters: dict, number: int, did: WebvhDid | None) -> None:
 
 
 def _witness(witness, number: int, did: WebvhDid | None) -> None:
-    """Every witness is a did:key whose key `eddsa-jcs-2022` can actually verify."""
+    """Every witness is a did:key whose key `eddsa-jcs-2022` can actually verify.
+
+    An empty object is the specification's way of saying "no witnesses" -- it "defaults to `{}`
+    if not set in the first log entry" and "MAY be set to `{}` to indicate that witnesses are not
+    (or no longer) being used". An earlier version of this function required a `witnesses` array
+    unconditionally and so refused conformant logs: of the five implementations in DIF's vector
+    suite, didwebvh-ts and didwebvh-py both emit `witness: {}` explicitly while rust, java and
+    dart omit the parameter. Refusing a submission every other implementation accepts is the
+    worst failure a publication gate has, because the customer has done nothing wrong and no
+    error message can tell them what to change.
+    """
     if not isinstance(witness, dict):
         _refuse_parameter("witness is not an object", number, did)
+    if not witness:
+        return  # the specified "no witnesses" value
     listed = witness.get("witnesses")
     if not isinstance(listed, list):
         _refuse_parameter("witness carries no witnesses array", number, did)

@@ -3,10 +3,15 @@
 # git-SHA-pinned runtime dependencies get any automated attention at all (panel finding OPS-F3).
 #
 # Those three -- did-webvh, keri and bakobo-errors -- are pinned to commits rather than releases,
-# deliberately (this.i 327yhyvd). Dependabot cannot bump a bare git SHA in pyproject.toml, so what
-# follows does NOT watch them; nothing does, and that is the honest state. A bump is a human
-# decision that must re-run the conformance work 327yhyvd names, because an unreleased HEAD is not
-# a version number you can trust on sight.
+# deliberately (this.i 327yhyvd), and they are IGNORED below. Not as a preference: left unignored,
+# Dependabot attempts them and the whole job fails. Observed on the first scheduled run,
+# 2026-09-15: it resolved the keri pin to "keri==2.1.0.dev0", found no such release, and reported
+# dependency_file_not_resolvable -- taking the PyPI updates down with it. A weekly job that is red
+# every Monday is worse than no job, because it teaches everyone to stop reading the red.
+#
+# So nothing watches those three, and that is the honest state. A bump is a human decision that
+# must re-run the conformance work 327yhyvd names, since an unreleased HEAD is not a version
+# number you can trust on sight.
 version: 2
 updates:
   - package-ecosystem: "uv"
@@ -17,6 +22,10 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "deps"
+    ignore:
+      - dependency-name: "did-webvh"
+      - dependency-name: "keri"
+      - dependency-name: "bakobo-errors"
 
   # The actions are SHA-pinned (oss-posture item 10), which makes them invisible to a human
   # reading a diff for version drift. Dependabot does understand action SHAs and will propose the

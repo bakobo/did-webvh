@@ -1,0 +1,31 @@
+description: "Log entry proof using a cryptosuite other than eddsa-jcs-2022"
+spec_ref: "https://identity.foundation/didwebvh/v1.0/#data-integrity-proof"
+negative: true
+
+keys:
+  - id: key-0
+    type: ed25519
+    seed: "0000000000000000000000000000000000000000000000000000000000000001"
+
+steps:
+  - op: create
+    domain: example.com
+    signer: key-0
+    timestamp: "2000-01-01T00:00:00Z"
+    params:
+      updateKeys: ["key-0"]
+
+  # After signing, rewrite the proof.cryptosuite field to a different
+  # data-integrity suite. The signature bytes are unchanged. A vulnerable
+  # resolver only checks proof.proofPurpose=assertionMethod and does not
+  # enforce cryptosuite=eddsa-jcs-2022 — so it would attempt verification
+  # under whatever canonicalization the swapped suite implies.
+  - op: corrupt
+    entry: 0
+    when: after-sign
+    mutation: replace-proof-field
+    field: cryptosuite
+    value: "eddsa-rdfc-2022"
+
+  - op: resolve
+    expectError: invalidProof

@@ -175,6 +175,44 @@ class TestRefusals:
         assert raised.value.code in {"e.input.missing.log.f", "e.proof.log.witness.f"}
 
 
+class TestImplicitServices:
+    """The resolved document carries the services every implementation puts there."""
+
+    def test_they_are_added_when_the_log_has_none(self):
+        did, log, _ = mint()
+        document = verify.verify(log, did).document
+        kinds = {service["type"] for service in document["service"]}
+        assert kinds == {"relativeRef", "LinkedVerifiablePresentation"}
+
+    def test_the_files_endpoint_omits_well_known(self):
+        """The log lives under .well-known for a bare-domain DID; its files do not. Four
+        independent implementations in the vector suite record it this way."""
+        did, log, _ = mint()
+        files = next(
+            s for s in verify.verify(log, did).document["service"] if s["type"] == "relativeRef"
+        )
+        assert files["serviceEndpoint"] == "https://example.com/"
+
+    def test_a_document_that_already_has_them_is_left_alone(self):
+        """The branch where neither is missing. Adding a second copy would be worse than
+        omitting them: a resolver dereferencing #files would find two."""
+        did, log, _ = mint()
+        verified = verify.verify(log, did)
+        again = dict(verified.document)
+        verify._extend_services(again, did)
+        assert len(again["service"]) == 2
+
+    def test_an_unrelated_service_is_not_disturbed(self):
+        did, _, _ = mint()
+        document = {"id": did.canonical, "service": [{"id": "#hub", "type": "Hub"}]}
+        verify._extend_services(document, did)
+        assert {s["type"] for s in document["service"]} == {
+            "Hub",
+            "relativeRef",
+            "LinkedVerifiablePresentation",
+        }
+
+
 class TestActiveUpdateKeys:
     def test_it_follows_a_key_rotation(self):
         """Panel finding TST-F1. If this returned the genesis key, bind() would accept a holder of

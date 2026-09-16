@@ -1,0 +1,34 @@
+description: "Portable DID update that changes the SCID segment of state.id"
+spec_ref: "https://identity.foundation/didwebvh/v1.0/#portability"
+negative: true
+
+keys:
+  - id: key-0
+    type: ed25519
+    seed: "0000000000000000000000000000000000000000000000000000000000000001"
+
+steps:
+  - op: create
+    domain: example.com
+    signer: key-0
+    timestamp: "2000-01-01T00:00:00Z"
+    params:
+      updateKeys: ["key-0"]
+      portable: true
+
+  # migrate to a new host AND change the SCID in state.id at the same time.
+  # The DID document also lists the previous DID in alsoKnownAs so the
+  # standard portability check passes.
+  - op: migrate
+    domain: newdomain.example.com
+    signer: key-0
+    timestamp: "2000-01-02T00:00:00Z"
+
+  - op: corrupt
+    entry: 1
+    when: before-sign
+    mutation: replace-state-id-scid
+    value: "QmAttackerChosenAfterPortabilityMove"
+
+  - op: resolve
+    expectError: invalidDid

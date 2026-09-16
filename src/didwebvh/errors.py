@@ -16,7 +16,7 @@ both refuse a malformed identifier need two codes, because a caller prefix-match
 what the module actually declares, having found the registry by type rather than by a hand-kept
 list -- so the sentence is a gate, not decoration.
 
-Codes declared here: 27.
+Codes declared here: 23.
 """
 
 from __future__ import annotations
@@ -24,12 +24,9 @@ from __future__ import annotations
 from bakobo.errors import ErrorCode
 
 __all__ = [
-    "BINDING_AID_UNPROVEN",
-    "BINDING_EVIDENCE_MISSING",
-    "BINDING_EVIDENCE_UNUSED",
-    "BINDING_KEY_MISMATCH",
     "CRYPTOSUITE_FORBIDDEN",
     "DID_INVALID",
+    "FOREIGN_ALIAS_REFUSED",
     "HASH_FORBIDDEN",
     "INTERNAL_FAULT",
     "LOG_DID_MISMATCH",
@@ -39,6 +36,7 @@ __all__ = [
     "LOG_NOT_PORTABLE",
     "LOG_SIGNATURE_FAILED",
     "LOG_TOO_LARGE",
+    "LOG_UNDIAGNOSED",
     "LOG_UNREADABLE",
     "LOG_WITNESS_FAILED",
     "METHOD_UNACCEPTABLE",
@@ -46,8 +44,6 @@ __all__ = [
     "PUBLISH_FAILED",
     "RESOLUTION_MISDRIVEN",
     "RESOLUTION_UNMAPPED",
-    "STREAM_EMPTY",
-    "STREAM_TOO_LARGE",
     "TOO_LARGE",
     "WITNESS_EVIDENCE_UNUSED",
     "WITNESS_MALFORMED",
@@ -75,15 +71,6 @@ LOG_TOO_LARGE = ErrorCode(
     "something is wrong with the log rather than with the limit.",
 )
 
-STREAM_TOO_LARGE = ErrorCode(
-    "e.input.range.stream.f",
-    "The submitted KERI event stream is larger than this service will read.",
-    detail="The stream submitted for {did} exceeds the bound on {bound}, which is {limit}.",
-    args=("did", "bound", "limit"),
-    hint="Submit only the AID's own key event log and the events the binding needs, not an "
-    "agent's entire database.",
-)
-
 WITNESS_TOO_LARGE = ErrorCode(
     "e.input.range.witness.f",
     "The submitted witness proof file is larger than this service will read.",
@@ -98,7 +85,6 @@ WITNESS_TOO_LARGE = ErrorCode(
 #: this only points at them.
 TOO_LARGE = {
     "log": LOG_TOO_LARGE,
-    "stream": STREAM_TOO_LARGE,
     "witness": WITNESS_TOO_LARGE,
 }
 
@@ -110,18 +96,6 @@ LOG_MALFORMED = ErrorCode(
     hint="A DID log is one JSON object per line, each carrying versionId, versionTime, "
     "parameters, state and proof. No blank lines.",
 )
-
-STREAM_EMPTY = ErrorCode(
-    "e.input.missing.stream.f",
-    "The submitted KERI event stream is empty.",
-    detail="The stream submitted for {did} contains no bytes.",
-    args=("did",),
-    hint="Submit the AID's key event log. A DID whose document claims no did:webs sibling needs "
-    "no stream at all -- omit the argument rather than submitting an empty file.",
-)
-# Boundary against did-webs' e.input.format.stream.f, which is a walkability failure in a CESR
-# stream that does have content. This one is the emptier case and takes the `missing` descriptor:
-# nothing arrived, so there is nothing whose format could be judged.
 
 WITNESS_MALFORMED = ErrorCode(
     "e.input.format.witness.f",
@@ -271,50 +245,22 @@ RESOLUTION_UNMAPPED = ErrorCode(
 )
 
 
-# --- The AID binding (this.i k6fiebmm). The claim being adjudicated is narrow and the codes say
-# so: one key, under one controller, at this moment. Nothing here speaks to whether the did:webs
-# DID is authorized for its host and path -- that is the did:webs method's own rule.
+# --- The hosting stance that replaced the AID binding (this.i plhyphrk). Not a verification
+# failure: nothing was checked and nothing could have been. `rule` is the descriptor because this
+# is a norm Bakobo enforces about what its infrastructure will carry.
 
-BINDING_EVIDENCE_MISSING = ErrorCode(
-    "e.input.missing.binding-evidence.f",
-    "The document claims a did:webs sibling but no key event log was submitted to prove it.",
-    detail="The document for {did} names {sibling} in alsoKnownAs, so this service requires "
-    "that AID's key event log alongside the DID log.",
-    args=("did", "sibling"),
-    hint="Submit the AID's keri.cesr, or remove the did:webs DID from alsoKnownAs and re-sign. "
-    "An unproven claim is not published here.",
+FOREIGN_ALIAS_REFUSED = ErrorCode(
+    "e.rule.hosting.foreign-alias.f",
+    "This service does not publish a DID document claiming another party's identity.",
+    detail="The document for {did} names {alias} in alsoKnownAs. Nothing in did:webvh or "
+    "did:webs makes that claim verifiable, so publishing it would put an unchecked assertion "
+    "about someone else under your domain, over our name. This is our hosting policy rather "
+    "than a rule of the method: your log is valid, another host may well publish it, and what "
+    "no host can do today is verify it.",
+    args=("did", "alias"),
+    hint="Remove the did:webs DID from alsoKnownAs and re-sign the entry. Everything else in "
+    "alsoKnownAs is fine -- an ordinary URL, a did:web, another did:webvh.",
 )
-
-BINDING_EVIDENCE_UNUSED = ErrorCode(
-    "e.rule.binding.unused-evidence.f",
-    "A key event log was submitted for a document that claims no did:webs sibling.",
-    detail="The document for {did} names no did:webs DID in alsoKnownAs, so the submitted key "
-    "event log proves nothing and was not used.",
-    args=("did",),
-    hint="Either the alsoKnownAs entry is missing from the log, or the stream was passed by "
-    "mistake. Refused rather than ignored, so nobody believes a binding was checked.",
-)
-
-BINDING_AID_UNPROVEN = ErrorCode(
-    "e.proof.binding.aid.f",
-    "The claimed did:webs sibling's AID is not proven by the submitted key event log.",
-    detail="For {did}, the sibling {sibling} could not be bound: {problem}.",
-    args=("did", "sibling", "problem"),
-    hint="The stream must verify the AID named in the did:webs DID's final segment, from its "
-    "inception event onward. Every did:webs DID in alsoKnownAs must be proven, not just one.",
-)
-
-BINDING_KEY_MISMATCH = ErrorCode(
-    "e.proof.binding.key.f",
-    "The AID verifies, but its current signing key is not authorized to update this DID log.",
-    detail="For {did}, the AID behind {sibling} verifies, but none of its current signing keys "
-    "appears in the log's active updateKeys.",
-    args=("did", "sibling"),
-    hint="The binding is about control right now, so a key the AID has rotated away from does "
-    "not satisfy it. Rotate the did:webvh updateKeys to the AID's current key, or the AID to "
-    "the update key.",
-)
-
 
 PUBLISH_FAILED = ErrorCode(
     "e.self.resource.publish.f",
@@ -352,3 +298,19 @@ INTERNAL_FAULT = ErrorCode(
 # The genuine catch-all, and the reason RESOLUTION_UNMAPPED moved to e.self.unknown.resolver.f:
 # the two were sharing a code, so a disk-full error reached operators claiming "the resolver
 # reported" something, which sent them to look in the wrong place (panel finding MNT-F4).
+
+
+LOG_UNDIAGNOSED = ErrorCode(
+    "e.proof.log.undiagnosed.f",
+    "A log entry failed verification, and the verifier could not say why.",
+    detail="The log submitted for {did} was refused while being verified, but the failure "
+    "arrived as {fault} rather than as a described verification error, so this message cannot "
+    "name the entry or the rule.",
+    args=("did", "fault"),
+    hint="The log is not published and the refusal is real -- this is not a service fault. The "
+    "imprecision is a known defect in the verifier we depend on (tick ~7iu4), reported upstream. "
+    "A did:key whose body and fragment name different keys is the case that produces it.",
+)
+# e.proof.* and not e.self.*: the submission IS invalid, and the verifier did refuse it. Only the
+# diagnosis is missing. Attributing this to ourselves would tell a customer with a bad log that
+# their log was fine and our service was broken.

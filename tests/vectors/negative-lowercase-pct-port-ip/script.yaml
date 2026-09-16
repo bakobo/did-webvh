@@ -1,0 +1,11 @@
+description: "DID URL with lowercase percent-encoded port separator hiding an IPv4 literal"
+spec_ref: "https://identity.foundation/didwebvh/v1.0/#did-method-specific-identifier"
+negative: true
+
+steps:
+  # Uppercase %3A is what most implementations split on, but RFC 3986 §2.1
+  # makes percent-encoding case-insensitive. Lowercase %3a stays glued to
+  # the host, which then no longer parses as an IpAddr in a lazy check.
+  - op: resolve-did
+    did: "did:webvh:Qm0000000000000000000000000000000000000000000000:127.0.0.1%3a8080"
+    expectError: invalidDid
